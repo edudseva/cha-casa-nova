@@ -1,5 +1,6 @@
 {
   "static": {
     "directory": "dist/client"
-  }
+  },
+  "d1": "DB"
 }

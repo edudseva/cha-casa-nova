@@ -4,7 +4,7 @@ import hostingConfig from "./.openai/hosting.json";
 import { sites } from "./build/sites-vite-plugin";
 
 const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
-  "00000000-0000-4000-8000-000000000000";
+  "bd69e88e-75c7-450e-9e23-7b2c0f88511c";
 
 const { d1, r2 } = hostingConfig;
 
@@ -14,6 +14,7 @@ const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
 const localBindingConfig = {
   main: "./worker/index.ts",
   compatibility_flags: ["nodejs_compat"],
+  keep_vars: true,
   d1_databases: d1
     ? [
         {
