@@ -1,0 +1,25 @@
+{
+  "eventTitle": "Nosso chá de casa nova",
+  "coupleNames": "Ana & Eduardo",
+  "brandLabel": "Nosso cantinho",
+  "eventDate": null,
+  "welcomeMessage": "Estamos preparando cada detalhe da nossa casa com muito carinho. Se quiser fazer parte desse começo, escolha um presente ou contribua com o valor que preferir.",
+  "heroEyebrow": "Um novo capítulo começa em casa",
+  "heroImage": "/project/sala.jpeg",
+  "heroImageAlt": "Projeto da sala do nosso novo lar",
+  "couplePhoto": "/photos/nos-dois.jpeg",
+  "couplePhotoAlt": "Ana e Eduardo juntos",
+  "deliveryAddress": "SHIS QL 20, Conjunto 02, Casa 14 - Lago Sul - CEP 71650-125",
+  "giftSheetCsvUrl": "https://docs.google.com/spreadsheets/d/1PPbR9LrlEmrL6Q7C4WaQQg3kbtnUnSVIIVCVmv_wNt0/gviz/tq?tqx=out:csv&sheet=Itens",
+  "suggestedPixValues": [50, 100, 150, 250, 500, 1000],
+  "theme": {
+    "background": "#f7f3ea",
+    "surface": "#fffaf2",
+    "primary": "#355845",
+    "primaryDark": "#294936",
+    "pixBackground": "#555a43",
+    "accent": "#a35f3f",
+    "text": "#3e3228",
+    "mutedText": "#77695c"
+  }
+}

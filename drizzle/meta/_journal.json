@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1788377116177,
+      "tag": "0000_old_ser_duncan",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1788436342126,
+      "tag": "0001_lean_tony_stark",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788896687087,
+      "tag": "0002_ambitious_paper_doll",
+      "breakpoints": true
+    }
+  ]
+}

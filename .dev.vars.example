@@ -1,0 +1,5 @@
+# Copie este arquivo para .dev.vars e preencha apenas no seu computador.
+# Nunca publique nem envie o arquivo .dev.vars real.
+PIX_KEY="sua-chave-pix"
+PIX_RECEIVER="NOME COMPLETO DO FAVORECIDO"
+PIX_CITY="BRASILIA"
