@@ -1,41 +1,35 @@
 import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/sonner";
-import siteConfig from "@/data/site-config.json";
+import { loadSiteConfig } from "@/lib/runtime-config";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: siteConfig.eventTitle,
-  description: siteConfig.welcomeMessage,
-  icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const config = await loadSiteConfig();
+  return {
+    title: config.seoTitle,
+    description: config.seoDescription,
+    icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
+  };
+}
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const config = await loadSiteConfig();
   const theme = {
-    "--site-background": siteConfig.theme.background,
-    "--site-surface": siteConfig.theme.surface,
-    "--site-primary": siteConfig.theme.primary,
-    "--site-primary-dark": siteConfig.theme.primaryDark,
-    "--site-pix-background": siteConfig.theme.pixBackground,
-    "--site-accent": siteConfig.theme.accent,
-    "--site-text": siteConfig.theme.text,
-    "--site-muted-text": siteConfig.theme.mutedText,
+    "--site-background": config.theme.background,
+    "--site-surface": config.theme.surface,
+    "--site-primary": config.theme.primary,
+    "--site-primary-dark": config.theme.primaryDark,
+    "--site-pix-background": config.theme.pixBackground,
+    "--site-accent": config.theme.accent,
+    "--site-text": config.theme.text,
+    "--site-muted-text": config.theme.mutedText,
   } as CSSProperties;
 
   return (
     <html lang="pt-BR">
-      <head><link rel="preload" as="image" href={siteConfig.couplePhoto} fetchPriority="high" /></head>
-      <body className="antialiased" style={theme}>
-        {children}
-        <Toaster position="top-center" />
-      </body>
+      <head><link rel="preload" as="image" href={config.couplePhoto} fetchPriority="high" /></head>
+      <body className="antialiased" style={theme}>{children}<Toaster position="top-center" /></body>
     </html>
   );
 }

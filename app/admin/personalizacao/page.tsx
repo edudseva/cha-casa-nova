@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Home } from "lucide-react";
 import { requireAdminPage } from "@/lib/admin-auth";
-import { loadSiteConfig } from "@/lib/runtime-config";
+import { loadPixAdminConfig, loadSiteConfig } from "@/lib/runtime-config";
 import { PersonalizationForm } from "./personalization-form";
 
 export const dynamic = "force-dynamic";
@@ -22,9 +22,9 @@ export default async function PersonalizationPage() {
     );
   }
 
-  const config = await loadSiteConfig();
+    const [config, pix] = await Promise.all([loadSiteConfig(), loadPixAdminConfig()]);
 
-  return (
-    <PersonalizationForm initialConfig={config} />
+    return (
+      <PersonalizationForm initialConfig={config} initialPix={pix} />
   );
 }

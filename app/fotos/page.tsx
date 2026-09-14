@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import { ArrowLeft, Heart, Home, Lock, Maximize2 } from "lucide-react";
 import Link from "next/link";
+import { loadSiteConfig } from "@/lib/runtime-config";
 
-export const metadata: Metadata = {
-  title: "Nossa história | Chá de Casa Nova",
-  description: "Um pouco da história de Ana e Eduardo em fotos.",
-};
+export const dynamic = "force-dynamic";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const config = await loadSiteConfig();
+  return { title: `Nossa história | ${config.seoTitle}`, description: `Um pouco da história de ${config.coupleNames} em fotos.` };
+}
 
 const photos = [
   { src: "/photos/festa-junina.jpeg", alt: "Ana e Eduardo juntos em uma festa junina", label: "Celebrando juntos", featured: true },
@@ -29,18 +32,19 @@ function PhotoCard({ photo }: { photo: (typeof photos)[number] }) {
   );
 }
 
-export default function PhotosPage() {
+export default async function PhotosPage() {
+  const config = await loadSiteConfig();
   return (
     <main className="photos-page">
       <header className="site-header photos-header">
-        <Link className="brand" href="/#inicio" aria-label="Voltar ao início"><span className="brand-mark"><Home size={18} /></span><span>Nosso cantinho</span></Link>
-        <nav aria-label="Navegação principal"><Link href="/#presentes">Presentes</Link><Link href="/#pix">Pix</Link><Link href="/projeto">O projeto</Link><Link className="current" href="/fotos">Fotos</Link></nav>
+        <Link className="brand" href="/#inicio" aria-label="Voltar ao início"><span className="brand-mark"><Home size={18} /></span><span>{config.brandLabel}</span></Link>
+        <nav aria-label="Navegação principal">{config.giftsEnabled && <Link href="/#presentes">Presentes</Link>}{config.pixEnabled && <Link href="/#pix">Pix</Link>}{config.projectPageEnabled && <Link href="/projeto">O projeto</Link>}<Link className="current" href="/fotos">Fotos</Link></nav>
       </header>
 
       <section className="couple-hero">
         <div className="couple-hero-copy">
           <Link className="back-link" href="/"><ArrowLeft size={17} /> Voltar para a lista</Link>
-          <p className="eyebrow">Ana & Eduardo</p>
+          <p className="eyebrow">{config.coupleNames}</p>
           <h1>Nossa história<br />em fotos</h1>
           <p>Entre aventuras, celebrações e muitos momentos especiais, chegamos ao começo de um novo capítulo: a construção do nosso lar.</p>
         </div>
@@ -58,7 +62,7 @@ export default function PhotosPage() {
 
       <section className="photos-cta"><Heart fill="currentColor" /><h2>Agora vocês também fazem parte dessa história.</h2><p>Cada presente e cada mensagem ajudam a construir este novo começo.</p><Link href="/#presentes">Ver a lista de presentes</Link></section>
 
-      <footer><div className="footer-heart"><Heart fill="currentColor" /></div><p>Obrigado por fazer parte do começo da nossa casa.</p><small>Ana & Eduardo</small><Link className="admin-lock-link" href="/admin" aria-label="Acessar área administrativa" title="Área administrativa"><Lock size={14} /></Link></footer>
+      <footer><div className="footer-heart"><Heart fill="currentColor" /></div><p>{config.footerMessage}</p><small>{config.coupleNames}</small><Link className="admin-lock-link" href="/admin" aria-label="Acessar área administrativa" title="Área administrativa"><Lock size={14} /></Link></footer>
     </main>
   );
 }

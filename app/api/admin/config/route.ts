@@ -1,6 +1,8 @@
 import { requireAdminApi } from "@/lib/admin-auth";
 import {
+  loadPixAdminConfig,
   loadSiteConfig,
+  savePixConfig,
   saveSiteConfig,
 } from "@/lib/runtime-config";
 import type { SiteConfig } from "@/types/gift";
@@ -23,8 +25,9 @@ export async function GET() {
     );
   }
 
-  return Response.json(
-    { config: await loadSiteConfig() },
+    const [config, pix] = await Promise.all([loadSiteConfig(), loadPixAdminConfig()]);
+    return Response.json(
+      { config, pix },
     { headers: { "cache-control": "no-store" } }
   );
 }
@@ -57,18 +60,20 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const body = (await request.json()) as {
-      config?: Partial<SiteConfig>;
-    };
+              const body = (await request.json()) as {
+                config?: Partial<SiteConfig>;
+                pix?: { enabled?: boolean; key?: string; receiver?: string; city?: string };
+              };
 
-    const config = await saveSiteConfig(
-      body.config ?? {}
-    );
+              const [config, pix] = await Promise.all([
+                saveSiteConfig(body.config ?? {}),
+                savePixConfig(body.pix ?? {}),
+              ]);
 
-    return Response.json({ ok: true, config });
-  } catch {
-    return Response.json(
-      { error: "Configuração inválida." },
+              return Response.json({ ok: true, config, pix });
+            } catch (error) {
+              return Response.json(
+                { error: error instanceof Error ? error.message : "Configuração inválida." },
       { status: 400 }
     );
   }

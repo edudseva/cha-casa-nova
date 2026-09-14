@@ -218,6 +218,9 @@ export function GiftCatalogV2({ gifts, config }: Props) {
 
   const purchasedGiftCount = catalogGifts.filter((gift) => purchased.has(gift.id)).length;
   const availableCount = Math.max(catalogGifts.length - purchasedGiftCount, 0);
+  const formattedEventDate = config.eventDate
+    ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "long", timeZone: "UTC" }).format(new Date(`${config.eventDate}T12:00:00Z`))
+    : "";
 
   function resetGiftForm() {
     setSelectedGift(null);
@@ -355,7 +358,7 @@ export function GiftCatalogV2({ gifts, config }: Props) {
     <main>
       <header className="site-header">
         <a className="brand" href="#inicio" aria-label="Ir para o início"><span className="brand-mark"><Home size={18} /></span><span>{config.brandLabel}</span></a>
-        <nav aria-label="Navegação principal"><a href="#presentes">Presentes</a><a href="#pix">Pix</a><a href="/projeto">O projeto</a><a href="/fotos">Fotos</a></nav>
+        <nav aria-label="Navegação principal">{config.giftsEnabled && <a href="#presentes">Presentes</a>}{config.pixEnabled && <a href="#pix">Pix</a>}{config.projectPageEnabled && <a href="/projeto">O projeto</a>}{config.photosPageEnabled && <a href="/fotos">Fotos</a>}</nav>
       </header>
 
       <section className="hero" id="inicio">
@@ -363,9 +366,10 @@ export function GiftCatalogV2({ gifts, config }: Props) {
           <p className="eyebrow">{config.heroEyebrow}</p>
           <h1>{config.eventTitle}</h1>
           <p className="hero-message">{config.welcomeMessage}</p>
+          {(formattedEventDate || config.eventTime || config.eventLocation) && <div className="hero-event-meta">{formattedEventDate && <span>{formattedEventDate}</span>}{config.eventTime && <span>{config.eventTime}</span>}{config.eventLocation && <span>{config.eventLocation}</span>}</div>}
           <div className="hero-actions">
-            <Button asChild size="lg" className="main-button"><a href="#presentes"><GiftIcon /> Escolher um presente</a></Button>
-            <Button asChild size="lg" variant="outline" className="outline-button"><a href="#pix"><Heart /> Contribuir com Pix</a></Button>
+            {config.giftsEnabled && <Button asChild size="lg" className="main-button"><a href="#presentes"><GiftIcon /> Escolher um presente</a></Button>}
+            {config.pixEnabled && <Button asChild size="lg" variant="outline" className="outline-button"><a href="#pix"><Heart /> Contribuir com Pix</a></Button>}
           </div>
           <div className="hero-stats" aria-label="Resumo do chá">
             <div><strong>{purchasedGiftCount} de {catalogGifts.length}</strong><span>presentes confirmados</span></div>
@@ -373,18 +377,18 @@ export function GiftCatalogV2({ gifts, config }: Props) {
           </div>
         </div>
         <div className="hero-visual">
-          <a className="hero-project-image" href="/projeto" aria-label="Conhecer o projeto do nosso novo lar">
+          <a className="hero-project-image" href={config.projectPageEnabled ? "/projeto" : config.heroImage} aria-label="Conhecer o projeto do nosso novo lar">
             <img src={config.heroImage} alt={config.heroImageAlt} loading="lazy" decoding="async" />
           </a>
-          <a className="hero-note" href="/projeto"><Heart size={17} fill="currentColor" /> Nosso projeto tomando forma <span aria-hidden="true">→</span></a>
+          {config.projectPageEnabled && <a className="hero-note" href="/projeto"><Heart size={17} fill="currentColor" /> Nosso projeto tomando forma <span aria-hidden="true">→</span></a>}
         </div>
       </section>
 
-      <section className="catalog-section" id="presentes">
+      <section className="catalog-section" id="presentes" hidden={!config.giftsEnabled}>
         <div className="catalog-intro">
-          <p className="eyebrow">Presentes para o nosso novo lar</p>
-          <h2>Lista de presentes</h2>
-          <p className="catalog-intro-text">Você escolhe, compra diretamente na loja e confirma aqui no final.</p>
+          <p className="eyebrow">{config.giftSectionEyebrow}</p>
+          <h2>{config.giftSectionTitle}</h2>
+          <p className="catalog-intro-text">{config.giftSectionDescription}</p>
           <div className="catalog-steps" role="list" aria-label="Como presentear">
             <div role="listitem"><span>1</span><p><strong>Escolha</strong><small>Abra o presente que preferir</small></p></div>
             <div role="listitem"><span>2</span><p><strong>Compre na loja</strong><small>Pagamento e entrega são feitos por lá</small></p></div>
@@ -474,10 +478,10 @@ export function GiftCatalogV2({ gifts, config }: Props) {
         {!catalogLoading && !catalogWarning && filteredGifts.length === 0 && <div className="empty-state"><Search /><h3>Nenhum presente encontrado</h3><p>Tente outra busca ou ajuste os filtros.</p></div>}
       </section>
 
-      <section className="pix-section" id="pix">
+      <section className="pix-section" id="pix" hidden={!config.pixEnabled}>
         <div className="pix-copy">
-          <p className="eyebrow">Uma contribuição do seu jeito</p><h2>Contribua para o nosso novo lar</h2>
-          <p>Se preferir, escolha um valor e gere o Pix. Você poderá pagar pelo QR Code ou pelo código copia e cola.</p>
+          <p className="eyebrow">{config.pixSectionEyebrow}</p><h2>{config.pixSectionTitle}</h2>
+          <p>{config.pixSectionDescription}</p>
         </div>
         <div className="pix-card">
           {!pixResult ? <form onSubmit={generatePix} className="pix-form">
@@ -509,7 +513,7 @@ export function GiftCatalogV2({ gifts, config }: Props) {
         </div>
       </section>
 
-      <footer><div className="footer-heart"><Heart fill="currentColor" /></div><p>Obrigado por fazer parte do começo da nossa casa.</p><small>{config.coupleNames}</small><a className="admin-lock-link" href="/admin" aria-label="Acessar área administrativa" title="Área administrativa"><Lock size={14} /></a></footer>
+      <footer><div className="footer-heart"><Heart fill="currentColor" /></div><p>{config.footerMessage}</p><small>{config.coupleNames}</small>{config.whatsappUrl && <a href={config.whatsappUrl} target="_blank" rel="noopener noreferrer">WhatsApp</a>}{config.instagramUrl && <a href={config.instagramUrl} target="_blank" rel="noopener noreferrer">Instagram</a>}<a className="admin-lock-link" href="/admin" aria-label="Acessar área administrativa" title="Área administrativa"><Lock size={14} /></a></footer>
 
       <Dialog open={welcomeOpen} onOpenChange={(open) => open ? setWelcomeOpen(true) : closeWelcome()}>
         <DialogContent className="welcome-dialog">
@@ -520,16 +524,16 @@ export function GiftCatalogV2({ gifts, config }: Props) {
             </figure>
             <div className="welcome-content">
               <DialogHeader>
-                <p className="eyebrow">Nosso chá de casa nova</p>
-                <DialogTitle>Bem-vindos ao nosso cantinho</DialogTitle>
-                <DialogDescription>Escolha um presente para a nossa casa ou contribua pelo Pix com o valor que desejar.</DialogDescription>
+                <p className="eyebrow">{config.eventTitle}</p>
+                <DialogTitle>{config.welcomeTitle}</DialogTitle>
+                <DialogDescription>{config.welcomeDescription}</DialogDescription>
               </DialogHeader>
               <div className="welcome-next">
             <div className="welcome-actions">
-              <Button asChild className="main-button"><a href="#presentes" onClick={closeWelcome}><GiftIcon /> Escolher um presente</a></Button>
-              <Button asChild className="welcome-pix-button"><a href="#pix" onClick={closeWelcome}><Heart /> Contribuir com Pix</a></Button>
+              {config.giftsEnabled && <Button asChild className="main-button"><a href="#presentes" onClick={closeWelcome}><GiftIcon /> Escolher um presente</a></Button>}
+              {config.pixEnabled && <Button asChild className="welcome-pix-button"><a href="#pix" onClick={closeWelcome}><Heart /> Contribuir com Pix</a></Button>}
             </div>
-                <a className="welcome-photos-link" href="/fotos" onClick={closeWelcome}>Conhecer nossa história em fotos <span aria-hidden="true">→</span></a>
+                {config.photosPageEnabled && <a className="welcome-photos-link" href="/fotos" onClick={closeWelcome}>Conhecer nossa história em fotos <span aria-hidden="true">→</span></a>}
               </div>
               <div className="welcome-reminder" role="note"><Check size={18} /><p><strong>Comprou na loja?</strong> Volte ao site e confirme o presente para evitar itens repetidos.</p></div>
             </div>
@@ -556,7 +560,7 @@ export function GiftCatalogV2({ gifts, config }: Props) {
             </RadioGroup>
             {deliveryChoice === "casal" && <div className="delivery-address" role="note">
               <MapPin size={18} aria-hidden="true" />
-              <p><span>Endereço para entrega</span><strong>SHIS QL 20, Conjunto 02, Casa 14</strong><small>Lago Sul · CEP 71650-125</small></p>
+              <p><span>Endereço para entrega</span><strong>{config.deliveryAddress}</strong></p>
               <Button type="button" variant="outline" onClick={copyDeliveryAddress} className="copy-address-button"><Copy /> Copiar</Button>
             </div>}
             {deliveryChoice && <p className="delivery-selection-next"><Check size={17} aria-hidden="true" /><span><strong>Forma de entrega escolhida.</strong> Agora siga com a compra no site da loja.</span></p>}

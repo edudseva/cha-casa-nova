@@ -2,24 +2,25 @@ import type { Metadata } from "next";
 import { ArrowLeft, ArrowRight, Heart, Home, Lock } from "lucide-react";
 import Link from "next/link";
 import { loadProjectGallery } from "@/lib/project-gallery";
+import { loadSiteConfig } from "@/lib/runtime-config";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "O projeto | Chá de Casa Nova",
-  description: "Conheça os ambientes e as cores que inspiram o novo lar de Ana e Eduardo.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const config = await loadSiteConfig();
+  return { title: `O projeto | ${config.seoTitle}`, description: `Conheça os ambientes e as cores que inspiram o novo lar de ${config.coupleNames}.` };
+}
 
 export default async function ProjectPage() {
-  const gallery = await loadProjectGallery();
+  const [gallery, config] = await Promise.all([loadProjectGallery(), loadSiteConfig()]);
   const featured = gallery.find((room) => room.featured && room.projectImage) ?? gallery.find((room) => room.projectImage) ?? gallery[0];
   const roomComparisons = gallery.filter((room) => room.currentImage && room.projectImage);
   const rooms = gallery.filter((room) => room.projectImage && room !== featured);
   return (
     <main className="project-page">
       <header className="site-header project-header">
-        <Link className="brand" href="/#inicio" aria-label="Voltar ao início"><span className="brand-mark"><Home size={18} /></span><span>Nosso cantinho</span></Link>
-        <nav aria-label="Navegação principal"><Link href="/#presentes">Presentes</Link><Link href="/#pix">Pix</Link><Link className="current" href="/projeto">O projeto</Link><Link href="/fotos">Fotos</Link></nav>
+        <Link className="brand" href="/#inicio" aria-label="Voltar ao início"><span className="brand-mark"><Home size={18} /></span><span>{config.brandLabel}</span></Link>
+        <nav aria-label="Navegação principal">{config.giftsEnabled && <Link href="/#presentes">Presentes</Link>}{config.pixEnabled && <Link href="/#pix">Pix</Link>}<Link className="current" href="/projeto">O projeto</Link>{config.photosPageEnabled && <Link href="/fotos">Fotos</Link>}</nav>
       </header>
 
       <section className="project-page-hero">
@@ -65,7 +66,7 @@ export default async function ProjectPage() {
 
       <section className="project-page-cta"><p className="eyebrow">Faça parte desse começo</p><h2>Ajude a transformar o projeto em lar.</h2><Link href="/#presentes">Ver a lista de presentes <ArrowRight size={18} /></Link></section>
 
-      <footer><div className="footer-heart"><Heart fill="currentColor" /></div><p>Obrigado por fazer parte do começo da nossa casa.</p><small>Ana & Eduardo</small><Link className="admin-lock-link" href="/admin" aria-label="Acessar área administrativa" title="Área administrativa"><Lock size={14} /></Link></footer>
+      <footer><div className="footer-heart"><Heart fill="currentColor" /></div><p>{config.footerMessage}</p><small>{config.coupleNames}</small><Link className="admin-lock-link" href="/admin" aria-label="Acessar área administrativa" title="Área administrativa"><Lock size={14} /></Link></footer>
     </main>
   );
 }

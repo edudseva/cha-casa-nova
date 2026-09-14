@@ -1,17 +1,7 @@
-import { env } from "cloudflare:workers";
-
-type PixEnvironment = {
-  PIX_KEY?: string;
-  PIX_RECEIVER?: string;
-  PIX_CITY?: string;
-};
+import { loadPixConfig } from "@/lib/runtime-config";
 
 function field(id: string, value: string) {
   return `${id}${String(value.length).padStart(2, "0")}${value}`;
-}
-
-function clean(value: string, maxLength: number) {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9 .-]/g, "").toUpperCase().slice(0, maxLength);
 }
 
 function crc16(payload: string) {
@@ -25,32 +15,23 @@ function crc16(payload: string) {
   return crc.toString(16).toUpperCase().padStart(4, "0");
 }
 
-function config() {
-  const fixed = env as unknown as PixEnvironment;
-  return {
-    key: fixed.PIX_KEY?.trim() ?? "",
-    receiver: clean(fixed.PIX_RECEIVER?.trim() ?? "", 25),
-    city: clean(fixed.PIX_CITY?.trim() || "BRASILIA", 15),
-  };
-}
-
 function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
   return !origin || new URL(origin).host === new URL(request.url).host;
 }
 
 export async function GET() {
-  const pix = config();
+  const pix = await loadPixConfig();
   return Response.json(
-    { ready: Boolean(pix.key && pix.receiver), receiver: pix.receiver || null },
+    { ready: Boolean(pix.enabled && pix.key && pix.receiver), receiver: pix.receiver || null },
     { headers: { "cache-control": "no-store" } }
   );
 }
 
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return Response.json({ error: "Origem inválida." }, { status: 403 });
-  const pix = config();
-  if (!pix.key || !pix.receiver) {
+  const pix = await loadPixConfig();
+  if (!pix.enabled || !pix.key || !pix.receiver) {
     return Response.json({ error: "O Pix ainda está sendo configurado." }, { status: 503 });
   }
 
