@@ -1,4 +1,4 @@
-name: Fixar configuração da Cloudflare
+name: Instalar painel de personalizacao
 
 on:
   push:
@@ -10,48 +10,824 @@ permissions:
   contents: write
 
 jobs:
-  configurar:
+  instalar:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Preservar D1 e variáveis
+      - name: Instalar personalizacao
         run: |
           python <<'PY'
-          import json
           from pathlib import Path
 
-          hosting_path = Path(".openai/hosting.json")
-          hosting = json.loads(hosting_path.read_text())
-          hosting["d1"] = "DB"
-          hosting_path.write_text(
-              json.dumps(hosting, indent=2, ensure_ascii=False) + "\n"
+          def write(path, content):
+              target = Path(path)
+              target.parent.mkdir(parents=True, exist_ok=True)
+              target.write_text(content, encoding="utf-8")
+
+          write("lib/runtime-config.ts", r'''import { env } from "cloudflare:workers";
+          import defaults from "@/data/site-config.json";
+          import type { SiteConfig } from "@/types/gift";
+
+          const fallback = defaults as SiteConfig;
+          const colorPattern = /^#[0-9a-f]{6}$/i;
+
+          function safeText(value: unknown, standard: string, limit: number) {
+            return typeof value === "string"
+              ? value.trim().slice(0, limit) || standard
+              : standard;
+          }
+
+          function safeColor(value: unknown, standard: string) {
+            return typeof value === "string" && colorPattern.test(value)
+              ? value
+              : standard;
+          }
+
+          function clean(input: Partial<SiteConfig>): SiteConfig {
+            let sheet = safeText(
+              input.giftSheetCsvUrl,
+              fallback.giftSheetCsvUrl,
+              1000
+            );
+
+            try {
+              const url = new URL(sheet);
+              if (
+                url.protocol !== "https:" ||
+                url.hostname !== "docs.google.com"
+              ) {
+                sheet = fallback.giftSheetCsvUrl;
+              }
+            } catch {
+              sheet = fallback.giftSheetCsvUrl;
+            }
+
+            const values = Array.isArray(input.suggestedPixValues)
+              ? input.suggestedPixValues
+                  .map(Number)
+                  .filter(
+                    (value) =>
+                      Number.isFinite(value) &&
+                      value > 0 &&
+                      value <= 100000
+                  )
+                  .slice(0, 12)
+              : fallback.suggestedPixValues;
+
+            return {
+              eventTitle: safeText(
+                input.eventTitle,
+                fallback.eventTitle,
+                100
+              ),
+              coupleNames: safeText(
+                input.coupleNames,
+                fallback.coupleNames,
+                100
+              ),
+              brandLabel: safeText(
+                input.brandLabel,
+                fallback.brandLabel,
+                80
+              ),
+              eventDate:
+                typeof input.eventDate === "string" &&
+                /^\d{4}-\d{2}-\d{2}$/.test(input.eventDate)
+                  ? input.eventDate
+                  : null,
+              welcomeMessage: safeText(
+                input.welcomeMessage,
+                fallback.welcomeMessage,
+                1200
+              ),
+              heroEyebrow: safeText(
+                input.heroEyebrow,
+                fallback.heroEyebrow,
+                120
+              ),
+              heroImage: fallback.heroImage,
+              heroImageAlt: fallback.heroImageAlt,
+              couplePhoto: fallback.couplePhoto,
+              couplePhotoAlt: fallback.couplePhotoAlt,
+              deliveryAddress: safeText(
+                input.deliveryAddress,
+                fallback.deliveryAddress,
+                500
+              ),
+              giftSheetCsvUrl: sheet,
+              suggestedPixValues:
+                values.length > 0
+                  ? values
+                  : fallback.suggestedPixValues,
+              theme: {
+                background: safeColor(
+                  input.theme?.background,
+                  fallback.theme.background
+                ),
+                surface: safeColor(
+                  input.theme?.surface,
+                  fallback.theme.surface
+                ),
+                primary: safeColor(
+                  input.theme?.primary,
+                  fallback.theme.primary
+                ),
+                primaryDark: safeColor(
+                  input.theme?.primaryDark,
+                  fallback.theme.primaryDark
+                ),
+                pixBackground: safeColor(
+                  input.theme?.pixBackground,
+                  fallback.theme.pixBackground
+                ),
+                accent: safeColor(
+                  input.theme?.accent,
+                  fallback.theme.accent
+                ),
+                text: safeColor(
+                  input.theme?.text,
+                  fallback.theme.text
+                ),
+                mutedText: safeColor(
+                  input.theme?.mutedText,
+                  fallback.theme.mutedText
+                ),
+              },
+            };
+          }
+
+          async function ensureTable() {
+            await env.DB.prepare(
+              "CREATE TABLE IF NOT EXISTS site_config (id INTEGER PRIMARY KEY NOT NULL, payload TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL)"
+            ).run();
+          }
+
+          export async function loadSiteConfig(): Promise<SiteConfig> {
+            try {
+              await ensureTable();
+
+              const row = await env.DB.prepare(
+                "SELECT payload FROM site_config WHERE id = 1"
+              ).first<{ payload: string }>();
+
+              return row?.payload
+                ? clean(JSON.parse(row.payload))
+                : fallback;
+            } catch (error) {
+              console.error("Could not load site configuration", error);
+              return fallback;
+            }
+          }
+
+          export async function saveSiteConfig(
+            input: Partial<SiteConfig>
+          ) {
+            const config = clean(input);
+
+            await ensureTable();
+
+            await env.DB.prepare(
+              "INSERT INTO site_config (id, payload, updated_at) VALUES (1, ?, CURRENT_TIMESTAMP) ON CONFLICT(id) DO UPDATE SET payload = excluded.payload, updated_at = CURRENT_TIMESTAMP"
+            )
+              .bind(JSON.stringify(config))
+              .run();
+
+            return config;
+          }
+          ''')
+
+          write("app/api/admin/config/route.ts", r'''import { requireAdminApi } from "@/lib/admin-auth";
+          import {
+            loadSiteConfig,
+            saveSiteConfig,
+          } from "@/lib/runtime-config";
+          import type { SiteConfig } from "@/types/gift";
+
+          function sameOrigin(request: Request) {
+            const origin = request.headers.get("origin");
+            return (
+              !origin ||
+              new URL(origin).host === new URL(request.url).host
+            );
+          }
+
+          export async function GET() {
+            const auth = await requireAdminApi();
+
+            if (!auth.ok) {
+              return Response.json(
+                { error: auth.error },
+                { status: auth.status }
+              );
+            }
+
+            return Response.json(
+              { config: await loadSiteConfig() },
+              { headers: { "cache-control": "no-store" } }
+            );
+          }
+
+          export async function PATCH(request: Request) {
+            if (!sameOrigin(request)) {
+              return Response.json(
+                { error: "Origem inválida." },
+                { status: 403 }
+              );
+            }
+
+            const auth = await requireAdminApi();
+
+            if (!auth.ok) {
+              return Response.json(
+                { error: auth.error },
+                { status: auth.status }
+              );
+            }
+
+            if (
+              Number(request.headers.get("content-length") ?? 0) >
+              30000
+            ) {
+              return Response.json(
+                { error: "Dados enviados em excesso." },
+                { status: 413 }
+              );
+            }
+
+            try {
+              const body = (await request.json()) as {
+                config?: Partial<SiteConfig>;
+              };
+
+              const config = await saveSiteConfig(
+                body.config ?? {}
+              );
+
+              return Response.json({ ok: true, config });
+            } catch {
+              return Response.json(
+                { error: "Configuração inválida." },
+                { status: 400 }
+              );
+            }
+          }
+          ''')
+
+          write("app/admin/personalizacao/page.tsx", r'''import Link from "next/link";
+          import { Home } from "lucide-react";
+          import { requireAdminPage } from "@/lib/admin-auth";
+          import { loadSiteConfig } from "@/lib/runtime-config";
+          import { PersonalizationForm } from "./personalization-form";
+
+          export const dynamic = "force-dynamic";
+
+          export default async function PersonalizationPage() {
+            const user = await requireAdminPage();
+
+            if (!user) {
+              return (
+                <main className="admin-denied">
+                  <Home size={34} />
+                  <h1>Acesso restrito</h1>
+                  <p>
+                    Esta área é exclusiva dos responsáveis pelo chá.
+                  </p>
+                  <Link href="/">Voltar ao site</Link>
+                </main>
+              );
+            }
+
+            const config = await loadSiteConfig();
+
+            return (
+              <PersonalizationForm initialConfig={config} />
+            );
+          }
+          ''')
+
+          write("app/admin/personalizacao/personalization-form.tsx", r'''"use client";
+
+          import { FormEvent, useState } from "react";
+          import Link from "next/link";
+          import { Home, Save } from "lucide-react";
+          import { toast } from "sonner";
+          import { Button } from "@/components/ui/button";
+          import { Input } from "@/components/ui/input";
+          import { Textarea } from "@/components/ui/textarea";
+          import type { SiteConfig } from "@/types/gift";
+
+          const colors: Array<
+            [keyof SiteConfig["theme"], string]
+          > = [
+            ["background", "Fundo"],
+            ["surface", "Cartões"],
+            ["primary", "Cor principal"],
+            ["primaryDark", "Principal escuro"],
+            ["pixBackground", "Fundo do Pix"],
+            ["accent", "Destaque"],
+            ["text", "Texto"],
+            ["mutedText", "Texto secundário"],
+          ];
+
+          export function PersonalizationForm({
+            initialConfig,
+          }: {
+            initialConfig: SiteConfig;
+          }) {
+            const [config, setConfig] =
+              useState(initialConfig);
+            const [pixValues, setPixValues] = useState(
+              initialConfig.suggestedPixValues.join(", ")
+            );
+            const [saving, setSaving] = useState(false);
+
+            function change<K extends keyof SiteConfig>(
+              key: K,
+              value: SiteConfig[K]
+            ) {
+              setConfig((current) => ({
+                ...current,
+                [key]: value,
+              }));
+            }
+
+            async function submit(event: FormEvent) {
+              event.preventDefault();
+              setSaving(true);
+
+              try {
+                const suggestedPixValues = pixValues
+                  .split(/[;, ]+/)
+                  .map(Number)
+                  .filter(
+                    (value) =>
+                      Number.isFinite(value) && value > 0
+                  );
+
+                const response = await fetch(
+                  "/api/admin/config",
+                  {
+                    method: "PATCH",
+                    headers: {
+                      "content-type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      config: {
+                        ...config,
+                        suggestedPixValues,
+                      },
+                    }),
+                    signal: AbortSignal.timeout(10000),
+                  }
+                );
+
+                const result = (await response.json()) as {
+                  config?: SiteConfig;
+                  error?: string;
+                };
+
+                if (!response.ok || !result.config) {
+                  throw new Error(
+                    result.error ??
+                      "Não foi possível salvar."
+                  );
+                }
+
+                setConfig(result.config);
+                setPixValues(
+                  result.config.suggestedPixValues.join(", ")
+                );
+
+                toast.success(
+                  "Personalização salva. Recarregue o site para conferir."
+                );
+              } catch (error) {
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : "Não foi possível salvar."
+                );
+              } finally {
+                setSaving(false);
+              }
+            }
+
+            return (
+              <main className="admin-page">
+                <header className="admin-header">
+                  <Link className="brand" href="/">
+                    <span className="brand-mark">
+                      <Home size={18} />
+                    </span>
+                    <span>Nosso cantinho</span>
+                  </Link>
+
+                  <Button asChild variant="outline">
+                    <Link href="/admin">
+                      Voltar ao painel
+                    </Link>
+                  </Button>
+                </header>
+
+                <section className="admin-shell">
+                  <div className="admin-heading">
+                    <p className="eyebrow">Área privada</p>
+                    <h1>Personalização</h1>
+                    <p>
+                      Altere textos, data, endereço,
+                      planilha, valores sugeridos e cores.
+                      As alterações são salvas sem novo
+                      deploy.
+                    </p>
+                  </div>
+
+                  <form
+                    onSubmit={submit}
+                    className="admin-config-form"
+                  >
+                    <div className="admin-config-grid">
+                      <label>
+                        Título do evento
+                        <Input
+                          value={config.eventTitle}
+                          onChange={(event) =>
+                            change(
+                              "eventTitle",
+                              event.target.value
+                            )
+                          }
+                        />
+                      </label>
+
+                      <label>
+                        Nomes do casal
+                        <Input
+                          value={config.coupleNames}
+                          onChange={(event) =>
+                            change(
+                              "coupleNames",
+                              event.target.value
+                            )
+                          }
+                        />
+                      </label>
+
+                      <label>
+                        Nome curto da marca
+                        <Input
+                          value={config.brandLabel}
+                          onChange={(event) =>
+                            change(
+                              "brandLabel",
+                              event.target.value
+                            )
+                          }
+                        />
+                      </label>
+
+                      <label>
+                        Data do evento
+                        <Input
+                          type="date"
+                          value={config.eventDate ?? ""}
+                          onChange={(event) =>
+                            change(
+                              "eventDate",
+                              event.target.value || null
+                            )
+                          }
+                        />
+                      </label>
+
+                      <label className="wide">
+                        Frase de abertura
+                        <Input
+                          value={config.heroEyebrow}
+                          onChange={(event) =>
+                            change(
+                              "heroEyebrow",
+                              event.target.value
+                            )
+                          }
+                        />
+                      </label>
+
+                      <label className="wide">
+                        Mensagem de boas-vindas
+                        <Textarea
+                          rows={5}
+                          value={config.welcomeMessage}
+                          onChange={(event) =>
+                            change(
+                              "welcomeMessage",
+                              event.target.value
+                            )
+                          }
+                        />
+                      </label>
+
+                      <label className="wide">
+                        Endereço para entrega
+                        <Textarea
+                          rows={3}
+                          value={config.deliveryAddress}
+                          onChange={(event) =>
+                            change(
+                              "deliveryAddress",
+                              event.target.value
+                            )
+                          }
+                        />
+                      </label>
+
+                      <label className="wide">
+                        Link CSV da planilha Google
+                        <Input
+                          value={config.giftSheetCsvUrl}
+                          onChange={(event) =>
+                            change(
+                              "giftSheetCsvUrl",
+                              event.target.value
+                            )
+                          }
+                        />
+                      </label>
+
+                      <label className="wide">
+                        Valores sugeridos para Pix,
+                        separados por vírgula
+                        <Input
+                          value={pixValues}
+                          onChange={(event) =>
+                            setPixValues(event.target.value)
+                          }
+                        />
+                      </label>
+                    </div>
+
+                    <div className="admin-color-section">
+                      <h2>Cores do site</h2>
+
+                      <div className="admin-color-grid">
+                        {colors.map(([key, label]) => (
+                          <label key={key}>
+                            {label}
+                            <span>
+                              <input
+                                type="color"
+                                value={config.theme[key]}
+                                onChange={(event) =>
+                                  setConfig((current) => ({
+                                    ...current,
+                                    theme: {
+                                      ...current.theme,
+                                      [key]:
+                                        event.target.value,
+                                    },
+                                  }))
+                                }
+                              />
+
+                              <Input
+                                value={config.theme[key]}
+                                onChange={(event) =>
+                                  setConfig((current) => ({
+                                    ...current,
+                                    theme: {
+                                      ...current.theme,
+                                      [key]:
+                                        event.target.value,
+                                    },
+                                  }))
+                                }
+                              />
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <Button
+                      type="submit"
+                      size="lg"
+                      disabled={saving}
+                    >
+                      <Save />
+                      {saving
+                        ? "Salvando..."
+                        : "Salvar personalização"}
+                    </Button>
+                  </form>
+                </section>
+              </main>
+            );
+          }
+          ''')
+
+          page = Path("app/page.tsx")
+          source = page.read_text()
+
+          source = source.replace(
+              'import config from "@/data/site-config.json";',
+              'import { loadSiteConfig } from "@/lib/runtime-config";'
           )
 
-          vite_path = Path("vite.config.ts")
-          vite = vite_path.read_text()
+          source = source.replace(
+              '''export default function Home() {
+            return <GiftCatalogV2 gifts={[] as Gift[]} config={config as SiteConfig} />;
+          }''',
+              '''export const dynamic = "force-dynamic";
 
-          vite = vite.replace(
-              "00000000-0000-4000-8000-000000000000",
-              "bd69e88e-75c7-450e-9e23-7b2c0f88511c"
+          export default async function Home() {
+            const config = await loadSiteConfig();
+            return <GiftCatalogV2 gifts={[] as Gift[]} config={config as SiteConfig} />;
+          }'''
           )
 
-          marker = 'compatibility_flags: ["nodejs_compat"],'
-          if "keep_vars: true" not in vite:
-              vite = vite.replace(
-                  marker,
-                  marker + "\n  keep_vars: true,"
+          page.write_text(source)
+
+          catalog = Path("lib/catalog.ts")
+          source = catalog.read_text()
+
+          source = source.replace(
+              'import siteConfig from "@/data/site-config.json";',
+              'import { loadSiteConfig } from "@/lib/runtime-config";'
+          )
+
+          source = source.replace(
+              'const SHEET_CSV_URL = siteConfig.giftSheetCsvUrl;\n',
+              ''
+          )
+
+          source = source.replace(
+              '''export async function loadCatalog(): Promise<{ gifts: Gift[]; source: "google-sheets" | "database-cache" }> {
+            try {''',
+              '''export async function loadCatalog(): Promise<{ gifts: Gift[]; source: "google-sheets" | "database-cache" }> {
+            try {
+              const siteConfig = await loadSiteConfig();'''
+          )
+
+          source = source.replace(
+              'fetch(SHEET_CSV_URL,',
+              'fetch(siteConfig.giftSheetCsvUrl,'
+          )
+
+          catalog.write_text(source)
+
+          dashboard = Path("app/admin/admin-dashboard.tsx")
+          source = dashboard.read_text()
+
+          source = source.replace(
+              'RefreshCw, RotateCcw }',
+              'Palette, RefreshCw, RotateCcw }'
+          )
+
+          old_header = '<div><span>Olá, {displayName}</span><Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw /> Atualizar</Button></div>'
+
+          new_header = '<div><span>Olá, {displayName}</span><Button asChild variant="outline"><Link href="/admin/personalizacao"><Palette /> Personalização</Link></Button><Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw /> Atualizar</Button></div>'
+
+          if old_header not in source:
+              raise SystemExit(
+                  "Cabeçalho do painel não encontrado."
               )
 
-          vite_path.write_text(vite)
+          dashboard.write_text(
+              source.replace(old_header, new_header)
+          )
+
+          component = Path("app/gift-catalog-v2.tsx")
+          source = component.read_text()
+
+          marker = '''  const [storeOpened, setStoreOpened] = useState(false);
+          '''
+
+          effect = '''  const [storeOpened, setStoreOpened] = useState(false);
+
+            useEffect(() => {
+              const root = document.documentElement;
+
+              const values: Record<string, string> = {
+                "--site-background": config.theme.background,
+                "--site-surface": config.theme.surface,
+                "--site-primary": config.theme.primary,
+                "--site-primary-dark": config.theme.primaryDark,
+                "--site-pix-background": config.theme.pixBackground,
+                "--site-accent": config.theme.accent,
+                "--site-text": config.theme.text,
+                "--site-muted-text": config.theme.mutedText,
+              };
+
+              Object.entries(values).forEach(
+                ([key, value]) =>
+                  root.style.setProperty(key, value)
+              );
+            }, [config.theme]);
+          '''
+
+          if marker not in source:
+              raise SystemExit(
+                  "Catálogo principal não encontrado."
+              )
+
+          component.write_text(
+              source.replace(marker, effect)
+          )
+
+          css = Path("app/globals.css")
+          source = css.read_text()
+
+          if "/* Admin personalization */" not in source:
+              source += r'''
+
+          /* Admin personalization */
+          .admin-config-form {
+            display: grid;
+            gap: 28px;
+            margin-top: 34px;
+            padding: 28px;
+            background: #fffaf2;
+            border: 1px solid #dfd1c1;
+            border-radius: 20px;
+          }
+
+          .admin-config-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+          }
+
+          .admin-config-form label {
+            display: grid;
+            gap: 8px;
+            color: #5e5146;
+            font-size: .85rem;
+            font-weight: 700;
+          }
+
+          .admin-config-form .wide {
+            grid-column: 1 / -1;
+          }
+
+          .admin-color-section h2 {
+            margin: 0 0 16px;
+            color: #4b321b;
+            font-family: Georgia, serif;
+            font-size: 1.7rem;
+          }
+
+          .admin-color-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+          }
+
+          .admin-color-grid label > span {
+            display: grid;
+            grid-template-columns: 48px minmax(0, 1fr);
+            gap: 8px;
+          }
+
+          .admin-color-grid input[type="color"] {
+            width: 48px;
+            height: 40px;
+            padding: 2px;
+            border: 1px solid #d7c8b8;
+            border-radius: 8px;
+            background: white;
+          }
+
+          @media (max-width: 800px) {
+            .admin-config-grid,
+            .admin-color-grid {
+              grid-template-columns: 1fr;
+            }
+
+            .admin-config-form {
+              padding: 18px;
+            }
+
+            .admin-header > div {
+              gap: 7px;
+            }
+          }
+          '''
+
+          css.write_text(source)
           PY
 
-      - name: Salvar configuração
+      - name: Instalar dependencias
+        run: npm clean-install --progress=false
+
+      - name: Testar construcao
+        run: npm run build
+
+      - name: Salvar personalizacao no GitHub
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .openai/hosting.json vite.config.ts
-          git commit -m "Preservar D1 e variáveis nos próximos deploys"
+          git add app lib
+          git commit -m "Adicionar personalizacao ao painel administrativo"
           git push
