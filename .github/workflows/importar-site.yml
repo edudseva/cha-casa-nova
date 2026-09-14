@@ -1,10 +1,10 @@
-name: Instalar painel de personalizacao
+name: Instalar personalizacao completa
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - ".github/workflows/importar-site.yml"
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -15,819 +15,227 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Baixar repositorio
+        uses: actions/checkout@v4
 
-      - name: Instalar personalizacao
+      - name: Aplicar central de personalizacao
+        shell: bash
         run: |
-          python <<'PY'
-          from pathlib import Path
-
-          def write(path, content):
-              target = Path(path)
-              target.parent.mkdir(parents=True, exist_ok=True)
-              target.write_text(content, encoding="utf-8")
-
-          write("lib/runtime-config.ts", r'''import { env } from "cloudflare:workers";
-          import defaults from "@/data/site-config.json";
-          import type { SiteConfig } from "@/types/gift";
-
-          const fallback = defaults as SiteConfig;
-          const colorPattern = /^#[0-9a-f]{6}$/i;
-
-          function safeText(value: unknown, standard: string, limit: number) {
-            return typeof value === "string"
-              ? value.trim().slice(0, limit) || standard
-              : standard;
-          }
-
-          function safeColor(value: unknown, standard: string) {
-            return typeof value === "string" && colorPattern.test(value)
-              ? value
-              : standard;
-          }
-
-          function clean(input: Partial<SiteConfig>): SiteConfig {
-            let sheet = safeText(
-              input.giftSheetCsvUrl,
-              fallback.giftSheetCsvUrl,
-              1000
-            );
-
-            try {
-              const url = new URL(sheet);
-              if (
-                url.protocol !== "https:" ||
-                url.hostname !== "docs.google.com"
-              ) {
-                sheet = fallback.giftSheetCsvUrl;
-              }
-            } catch {
-              sheet = fallback.giftSheetCsvUrl;
-            }
-
-            const values = Array.isArray(input.suggestedPixValues)
-              ? input.suggestedPixValues
-                  .map(Number)
-                  .filter(
-                    (value) =>
-                      Number.isFinite(value) &&
-                      value > 0 &&
-                      value <= 100000
-                  )
-                  .slice(0, 12)
-              : fallback.suggestedPixValues;
-
-            return {
-              eventTitle: safeText(
-                input.eventTitle,
-                fallback.eventTitle,
-                100
-              ),
-              coupleNames: safeText(
-                input.coupleNames,
-                fallback.coupleNames,
-                100
-              ),
-              brandLabel: safeText(
-                input.brandLabel,
-                fallback.brandLabel,
-                80
-              ),
-              eventDate:
-                typeof input.eventDate === "string" &&
-                /^\d{4}-\d{2}-\d{2}$/.test(input.eventDate)
-                  ? input.eventDate
-                  : null,
-              welcomeMessage: safeText(
-                input.welcomeMessage,
-                fallback.welcomeMessage,
-                1200
-              ),
-              heroEyebrow: safeText(
-                input.heroEyebrow,
-                fallback.heroEyebrow,
-                120
-              ),
-              heroImage: fallback.heroImage,
-              heroImageAlt: fallback.heroImageAlt,
-              couplePhoto: fallback.couplePhoto,
-              couplePhotoAlt: fallback.couplePhotoAlt,
-              deliveryAddress: safeText(
-                input.deliveryAddress,
-                fallback.deliveryAddress,
-                500
-              ),
-              giftSheetCsvUrl: sheet,
-              suggestedPixValues:
-                values.length > 0
-                  ? values
-                  : fallback.suggestedPixValues,
-              theme: {
-                background: safeColor(
-                  input.theme?.background,
-                  fallback.theme.background
-                ),
-                surface: safeColor(
-                  input.theme?.surface,
-                  fallback.theme.surface
-                ),
-                primary: safeColor(
-                  input.theme?.primary,
-                  fallback.theme.primary
-                ),
-                primaryDark: safeColor(
-                  input.theme?.primaryDark,
-                  fallback.theme.primaryDark
-                ),
-                pixBackground: safeColor(
-                  input.theme?.pixBackground,
-                  fallback.theme.pixBackground
-                ),
-                accent: safeColor(
-                  input.theme?.accent,
-                  fallback.theme.accent
-                ),
-                text: safeColor(
-                  input.theme?.text,
-                  fallback.theme.text
-                ),
-                mutedText: safeColor(
-                  input.theme?.mutedText,
-                  fallback.theme.mutedText
-                ),
-              },
-            };
-          }
-
-          async function ensureTable() {
-            await env.DB.prepare(
-              "CREATE TABLE IF NOT EXISTS site_config (id INTEGER PRIMARY KEY NOT NULL, payload TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL)"
-            ).run();
-          }
-
-          export async function loadSiteConfig(): Promise<SiteConfig> {
-            try {
-              await ensureTable();
-
-              const row = await env.DB.prepare(
-                "SELECT payload FROM site_config WHERE id = 1"
-              ).first<{ payload: string }>();
-
-              return row?.payload
-                ? clean(JSON.parse(row.payload))
-                : fallback;
-            } catch (error) {
-              console.error("Could not load site configuration", error);
-              return fallback;
-            }
-          }
-
-          export async function saveSiteConfig(
-            input: Partial<SiteConfig>
-          ) {
-            const config = clean(input);
-
-            await ensureTable();
-
-            await env.DB.prepare(
-              "INSERT INTO site_config (id, payload, updated_at) VALUES (1, ?, CURRENT_TIMESTAMP) ON CONFLICT(id) DO UPDATE SET payload = excluded.payload, updated_at = CURRENT_TIMESTAMP"
-            )
-              .bind(JSON.stringify(config))
-              .run();
-
-            return config;
-          }
-          ''')
-
-          write("app/api/admin/config/route.ts", r'''import { requireAdminApi } from "@/lib/admin-auth";
-          import {
-            loadSiteConfig,
-            saveSiteConfig,
-          } from "@/lib/runtime-config";
-          import type { SiteConfig } from "@/types/gift";
-
-          function sameOrigin(request: Request) {
-            const origin = request.headers.get("origin");
-            return (
-              !origin ||
-              new URL(origin).host === new URL(request.url).host
-            );
-          }
-
-          export async function GET() {
-            const auth = await requireAdminApi();
-
-            if (!auth.ok) {
-              return Response.json(
-                { error: auth.error },
-                { status: auth.status }
-              );
-            }
-
-            return Response.json(
-              { config: await loadSiteConfig() },
-              { headers: { "cache-control": "no-store" } }
-            );
-          }
-
-          export async function PATCH(request: Request) {
-            if (!sameOrigin(request)) {
-              return Response.json(
-                { error: "Origem inválida." },
-                { status: 403 }
-              );
-            }
-
-            const auth = await requireAdminApi();
-
-            if (!auth.ok) {
-              return Response.json(
-                { error: auth.error },
-                { status: auth.status }
-              );
-            }
-
-            if (
-              Number(request.headers.get("content-length") ?? 0) >
-              30000
-            ) {
-              return Response.json(
-                { error: "Dados enviados em excesso." },
-                { status: 413 }
-              );
-            }
-
-            try {
-              const body = (await request.json()) as {
-                config?: Partial<SiteConfig>;
-              };
-
-              const config = await saveSiteConfig(
-                body.config ?? {}
-              );
-
-              return Response.json({ ok: true, config });
-            } catch {
-              return Response.json(
-                { error: "Configuração inválida." },
-                { status: 400 }
-              );
-            }
-          }
-          ''')
-
-          write("app/admin/personalizacao/page.tsx", r'''import Link from "next/link";
-          import { Home } from "lucide-react";
-          import { requireAdminPage } from "@/lib/admin-auth";
-          import { loadSiteConfig } from "@/lib/runtime-config";
-          import { PersonalizationForm } from "./personalization-form";
-
-          export const dynamic = "force-dynamic";
-
-          export default async function PersonalizationPage() {
-            const user = await requireAdminPage();
-
-            if (!user) {
-              return (
-                <main className="admin-denied">
-                  <Home size={34} />
-                  <h1>Acesso restrito</h1>
-                  <p>
-                    Esta área é exclusiva dos responsáveis pelo chá.
-                  </p>
-                  <Link href="/">Voltar ao site</Link>
-                </main>
-              );
-            }
-
-            const config = await loadSiteConfig();
-
-            return (
-              <PersonalizationForm initialConfig={config} />
-            );
-          }
-          ''')
-
-          write("app/admin/personalizacao/personalization-form.tsx", r'''"use client";
-
-          import { FormEvent, useState } from "react";
-          import Link from "next/link";
-          import { Home, Save } from "lucide-react";
-          import { toast } from "sonner";
-          import { Button } from "@/components/ui/button";
-          import { Input } from "@/components/ui/input";
-          import { Textarea } from "@/components/ui/textarea";
-          import type { SiteConfig } from "@/types/gift";
-
-          const colors: Array<
-            [keyof SiteConfig["theme"], string]
-          > = [
-            ["background", "Fundo"],
-            ["surface", "Cartões"],
-            ["primary", "Cor principal"],
-            ["primaryDark", "Principal escuro"],
-            ["pixBackground", "Fundo do Pix"],
-            ["accent", "Destaque"],
-            ["text", "Texto"],
-            ["mutedText", "Texto secundário"],
-          ];
-
-          export function PersonalizationForm({
-            initialConfig,
-          }: {
-            initialConfig: SiteConfig;
-          }) {
-            const [config, setConfig] =
-              useState(initialConfig);
-            const [pixValues, setPixValues] = useState(
-              initialConfig.suggestedPixValues.join(", ")
-            );
-            const [saving, setSaving] = useState(false);
-
-            function change<K extends keyof SiteConfig>(
-              key: K,
-              value: SiteConfig[K]
-            ) {
-              setConfig((current) => ({
-                ...current,
-                [key]: value,
-              }));
-            }
-
-            async function submit(event: FormEvent) {
-              event.preventDefault();
-              setSaving(true);
-
-              try {
-                const suggestedPixValues = pixValues
-                  .split(/[;, ]+/)
-                  .map(Number)
-                  .filter(
-                    (value) =>
-                      Number.isFinite(value) && value > 0
-                  );
-
-                const response = await fetch(
-                  "/api/admin/config",
-                  {
-                    method: "PATCH",
-                    headers: {
-                      "content-type": "application/json",
-                    },
-                    body: JSON.stringify({
-                      config: {
-                        ...config,
-                        suggestedPixValues,
-                      },
-                    }),
-                    signal: AbortSignal.timeout(10000),
-                  }
-                );
-
-                const result = (await response.json()) as {
-                  config?: SiteConfig;
-                  error?: string;
-                };
-
-                if (!response.ok || !result.config) {
-                  throw new Error(
-                    result.error ??
-                      "Não foi possível salvar."
-                  );
-                }
-
-                setConfig(result.config);
-                setPixValues(
-                  result.config.suggestedPixValues.join(", ")
-                );
-
-                toast.success(
-                  "Personalização salva. Recarregue o site para conferir."
-                );
-              } catch (error) {
-                toast.error(
-                  error instanceof Error
-                    ? error.message
-                    : "Não foi possível salvar."
-                );
-              } finally {
-                setSaving(false);
-              }
-            }
-
-            return (
-              <main className="admin-page">
-                <header className="admin-header">
-                  <Link className="brand" href="/">
-                    <span className="brand-mark">
-                      <Home size={18} />
-                    </span>
-                    <span>Nosso cantinho</span>
-                  </Link>
-
-                  <Button asChild variant="outline">
-                    <Link href="/admin">
-                      Voltar ao painel
-                    </Link>
-                  </Button>
-                </header>
-
-                <section className="admin-shell">
-                  <div className="admin-heading">
-                    <p className="eyebrow">Área privada</p>
-                    <h1>Personalização</h1>
-                    <p>
-                      Altere textos, data, endereço,
-                      planilha, valores sugeridos e cores.
-                      As alterações são salvas sem novo
-                      deploy.
-                    </p>
-                  </div>
-
-                  <form
-                    onSubmit={submit}
-                    className="admin-config-form"
-                  >
-                    <div className="admin-config-grid">
-                      <label>
-                        Título do evento
-                        <Input
-                          value={config.eventTitle}
-                          onChange={(event) =>
-                            change(
-                              "eventTitle",
-                              event.target.value
-                            )
-                          }
-                        />
-                      </label>
-
-                      <label>
-                        Nomes do casal
-                        <Input
-                          value={config.coupleNames}
-                          onChange={(event) =>
-                            change(
-                              "coupleNames",
-                              event.target.value
-                            )
-                          }
-                        />
-                      </label>
-
-                      <label>
-                        Nome curto da marca
-                        <Input
-                          value={config.brandLabel}
-                          onChange={(event) =>
-                            change(
-                              "brandLabel",
-                              event.target.value
-                            )
-                          }
-                        />
-                      </label>
-
-                      <label>
-                        Data do evento
-                        <Input
-                          type="date"
-                          value={config.eventDate ?? ""}
-                          onChange={(event) =>
-                            change(
-                              "eventDate",
-                              event.target.value || null
-                            )
-                          }
-                        />
-                      </label>
-
-                      <label className="wide">
-                        Frase de abertura
-                        <Input
-                          value={config.heroEyebrow}
-                          onChange={(event) =>
-                            change(
-                              "heroEyebrow",
-                              event.target.value
-                            )
-                          }
-                        />
-                      </label>
-
-                      <label className="wide">
-                        Mensagem de boas-vindas
-                        <Textarea
-                          rows={5}
-                          value={config.welcomeMessage}
-                          onChange={(event) =>
-                            change(
-                              "welcomeMessage",
-                              event.target.value
-                            )
-                          }
-                        />
-                      </label>
-
-                      <label className="wide">
-                        Endereço para entrega
-                        <Textarea
-                          rows={3}
-                          value={config.deliveryAddress}
-                          onChange={(event) =>
-                            change(
-                              "deliveryAddress",
-                              event.target.value
-                            )
-                          }
-                        />
-                      </label>
-
-                      <label className="wide">
-                        Link CSV da planilha Google
-                        <Input
-                          value={config.giftSheetCsvUrl}
-                          onChange={(event) =>
-                            change(
-                              "giftSheetCsvUrl",
-                              event.target.value
-                            )
-                          }
-                        />
-                      </label>
-
-                      <label className="wide">
-                        Valores sugeridos para Pix,
-                        separados por vírgula
-                        <Input
-                          value={pixValues}
-                          onChange={(event) =>
-                            setPixValues(event.target.value)
-                          }
-                        />
-                      </label>
-                    </div>
-
-                    <div className="admin-color-section">
-                      <h2>Cores do site</h2>
-
-                      <div className="admin-color-grid">
-                        {colors.map(([key, label]) => (
-                          <label key={key}>
-                            {label}
-                            <span>
-                              <input
-                                type="color"
-                                value={config.theme[key]}
-                                onChange={(event) =>
-                                  setConfig((current) => ({
-                                    ...current,
-                                    theme: {
-                                      ...current.theme,
-                                      [key]:
-                                        event.target.value,
-                                    },
-                                  }))
-                                }
-                              />
-
-                              <Input
-                                value={config.theme[key]}
-                                onChange={(event) =>
-                                  setConfig((current) => ({
-                                    ...current,
-                                    theme: {
-                                      ...current.theme,
-                                      [key]:
-                                        event.target.value,
-                                    },
-                                  }))
-                                }
-                              />
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    <Button
-                      type="submit"
-                      size="lg"
-                      disabled={saving}
-                    >
-                      <Save />
-                      {saving
-                        ? "Salvando..."
-                        : "Salvar personalização"}
-                    </Button>
-                  </form>
-                </section>
-              </main>
-            );
-          }
-          ''')
-
-          page = Path("app/page.tsx")
-          source = page.read_text()
-
-          source = source.replace(
-              'import config from "@/data/site-config.json";',
-              'import { loadSiteConfig } from "@/lib/runtime-config";'
-          )
-
-          source = source.replace(
-              '''export default function Home() {
-            return <GiftCatalogV2 gifts={[] as Gift[]} config={config as SiteConfig} />;
-          }''',
-              '''export const dynamic = "force-dynamic";
-
-          export default async function Home() {
-            const config = await loadSiteConfig();
-            return <GiftCatalogV2 gifts={[] as Gift[]} config={config as SiteConfig} />;
-          }'''
-          )
-
-          page.write_text(source)
-
-          catalog = Path("lib/catalog.ts")
-          source = catalog.read_text()
-
-          source = source.replace(
-              'import siteConfig from "@/data/site-config.json";',
-              'import { loadSiteConfig } from "@/lib/runtime-config";'
-          )
-
-          source = source.replace(
-              'const SHEET_CSV_URL = siteConfig.giftSheetCsvUrl;\n',
-              ''
-          )
-
-          source = source.replace(
-              '''export async function loadCatalog(): Promise<{ gifts: Gift[]; source: "google-sheets" | "database-cache" }> {
-            try {''',
-              '''export async function loadCatalog(): Promise<{ gifts: Gift[]; source: "google-sheets" | "database-cache" }> {
-            try {
-              const siteConfig = await loadSiteConfig();'''
-          )
-
-          source = source.replace(
-              'fetch(SHEET_CSV_URL,',
-              'fetch(siteConfig.giftSheetCsvUrl,'
-          )
-
-          catalog.write_text(source)
-
-          dashboard = Path("app/admin/admin-dashboard.tsx")
-          source = dashboard.read_text()
-
-          source = source.replace(
-              'RefreshCw, RotateCcw }',
-              'Palette, RefreshCw, RotateCcw }'
-          )
-
-          old_header = '<div><span>Olá, {displayName}</span><Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw /> Atualizar</Button></div>'
-
-          new_header = '<div><span>Olá, {displayName}</span><Button asChild variant="outline"><Link href="/admin/personalizacao"><Palette /> Personalização</Link></Button><Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw /> Atualizar</Button></div>'
-
-          if old_header not in source:
-              raise SystemExit(
-                  "Cabeçalho do painel não encontrado."
-              )
-
-          dashboard.write_text(
-              source.replace(old_header, new_header)
-          )
-
-          component = Path("app/gift-catalog-v2.tsx")
-          source = component.read_text()
-
-          marker = '''  const [storeOpened, setStoreOpened] = useState(false);
-          '''
-
-          effect = '''  const [storeOpened, setStoreOpened] = useState(false);
-
-            useEffect(() => {
-              const root = document.documentElement;
-
-              const values: Record<string, string> = {
-                "--site-background": config.theme.background,
-                "--site-surface": config.theme.surface,
-                "--site-primary": config.theme.primary,
-                "--site-primary-dark": config.theme.primaryDark,
-                "--site-pix-background": config.theme.pixBackground,
-                "--site-accent": config.theme.accent,
-                "--site-text": config.theme.text,
-                "--site-muted-text": config.theme.mutedText,
-              };
-
-              Object.entries(values).forEach(
-                ([key, value]) =>
-                  root.style.setProperty(key, value)
-              );
-            }, [config.theme]);
-          '''
-
-          if marker not in source:
-              raise SystemExit(
-                  "Catálogo principal não encontrado."
-              )
-
-          component.write_text(
-              source.replace(marker, effect)
-          )
-
-          css = Path("app/globals.css")
-          source = css.read_text()
-
-          if "/* Admin personalization */" not in source:
-              source += r'''
-
-          /* Admin personalization */
-          .admin-config-form {
-            display: grid;
-            gap: 28px;
-            margin-top: 34px;
-            padding: 28px;
-            background: #fffaf2;
-            border: 1px solid #dfd1c1;
-            border-radius: 20px;
-          }
-
-          .admin-config-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 18px;
-          }
-
-          .admin-config-form label {
-            display: grid;
-            gap: 8px;
-            color: #5e5146;
-            font-size: .85rem;
-            font-weight: 700;
-          }
-
-          .admin-config-form .wide {
-            grid-column: 1 / -1;
-          }
-
-          .admin-color-section h2 {
-            margin: 0 0 16px;
-            color: #4b321b;
-            font-family: Georgia, serif;
-            font-size: 1.7rem;
-          }
-
-          .admin-color-grid {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 14px;
-          }
-
-          .admin-color-grid label > span {
-            display: grid;
-            grid-template-columns: 48px minmax(0, 1fr);
-            gap: 8px;
-          }
-
-          .admin-color-grid input[type="color"] {
-            width: 48px;
-            height: 40px;
-            padding: 2px;
-            border: 1px solid #d7c8b8;
-            border-radius: 8px;
-            background: white;
-          }
-
-          @media (max-width: 800px) {
-            .admin-config-grid,
-            .admin-color-grid {
-              grid-template-columns: 1fr;
-            }
-
-            .admin-config-form {
-              padding: 18px;
-            }
-
-            .admin-header > div {
-              gap: 7px;
-            }
-          }
-          '''
-
-          css.write_text(source)
-          PY
+          base64 -d > /tmp/personalizacao.patch.gz <<'PATCH_B64'
+          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
+          PATCH_B64
+          gzip -dc /tmp/personalizacao.patch.gz > /tmp/personalizacao.patch
+          git apply --check /tmp/personalizacao.patch
+          git apply /tmp/personalizacao.patch
 
       - name: Instalar dependencias
         run: npm clean-install --progress=false
 
-      - name: Testar construcao
+      - name: Validar site
         run: npm run build
 
-      - name: Salvar personalizacao no GitHub
+      - name: Salvar no repositorio
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app lib
-          git commit -m "Adicionar personalizacao ao painel administrativo"
+          git add app data lib types
+          git commit -m "Ampliar painel de personalizacao"
           git push
+
