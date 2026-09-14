@@ -1,9 +1,8 @@
-name: Importar site do ZIP
+name: Fixar configuração da Cloudflare
 
 on:
   push:
     paths:
-      - "cha-casa-nova-github.zip"
       - ".github/workflows/importar-site.yml"
   workflow_dispatch:
 
@@ -11,23 +10,48 @@ permissions:
   contents: write
 
 jobs:
-  importar:
+  configurar:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
 
     steps:
-      - name: Baixar repositório
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Descompactar site
+      - name: Preservar D1 e variáveis
         run: |
-          unzip -o cha-casa-nova-github.zip
-          rm cha-casa-nova-github.zip
+          python <<'PY'
+          import json
+          from pathlib import Path
 
-      - name: Salvar arquivos
+          hosting_path = Path(".openai/hosting.json")
+          hosting = json.loads(hosting_path.read_text())
+          hosting["d1"] = "DB"
+          hosting_path.write_text(
+              json.dumps(hosting, indent=2, ensure_ascii=False) + "\n"
+          )
+
+          vite_path = Path("vite.config.ts")
+          vite = vite_path.read_text()
+
+          vite = vite.replace(
+              "00000000-0000-4000-8000-000000000000",
+              "bd69e88e-75c7-450e-9e23-7b2c0f88511c"
+          )
+
+          marker = 'compatibility_flags: ["nodejs_compat"],'
+          if "keep_vars: true" not in vite:
+              vite = vite.replace(
+                  marker,
+                  marker + "\n  keep_vars: true,"
+              )
+
+          vite_path.write_text(vite)
+          PY
+
+      - name: Salvar configuração
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Importar código completo do site"
+          git add .openai/hosting.json vite.config.ts
+          git commit -m "Preservar D1 e variáveis nos próximos deploys"
           git push
