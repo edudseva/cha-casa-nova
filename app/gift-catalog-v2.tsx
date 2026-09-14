@@ -107,6 +107,26 @@ export function GiftCatalogV2({ gifts, config }: Props) {
   const [storeOpened, setStoreOpened] = useState(false);
 
   useEffect(() => {
+    const root = document.documentElement;
+
+    const values: Record<string, string> = {
+      "--site-background": config.theme.background,
+      "--site-surface": config.theme.surface,
+      "--site-primary": config.theme.primary,
+      "--site-primary-dark": config.theme.primaryDark,
+      "--site-pix-background": config.theme.pixBackground,
+      "--site-accent": config.theme.accent,
+      "--site-text": config.theme.text,
+      "--site-muted-text": config.theme.mutedText,
+    };
+
+    Object.entries(values).forEach(
+      ([key, value]) =>
+        root.style.setProperty(key, value)
+    );
+  }, [config.theme]);
+
+  useEffect(() => {
     let active = true;
     async function loadReservations() {
       try {

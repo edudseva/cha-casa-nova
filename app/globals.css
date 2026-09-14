@@ -981,3 +981,76 @@ section[id] { scroll-margin-top: 72px; }
   .gift-button { width: 100%; }
   .reservation-dialog { padding-inline: 15px; }
 }
+
+
+/* Admin personalization */
+.admin-config-form {
+  display: grid;
+  gap: 28px;
+  margin-top: 34px;
+  padding: 28px;
+  background: #fffaf2;
+  border: 1px solid #dfd1c1;
+  border-radius: 20px;
+}
+
+.admin-config-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.admin-config-form label {
+  display: grid;
+  gap: 8px;
+  color: #5e5146;
+  font-size: .85rem;
+  font-weight: 700;
+}
+
+.admin-config-form .wide {
+  grid-column: 1 / -1;
+}
+
+.admin-color-section h2 {
+  margin: 0 0 16px;
+  color: #4b321b;
+  font-family: Georgia, serif;
+  font-size: 1.7rem;
+}
+
+.admin-color-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-color-grid label > span {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.admin-color-grid input[type="color"] {
+  width: 48px;
+  height: 40px;
+  padding: 2px;
+  border: 1px solid #d7c8b8;
+  border-radius: 8px;
+  background: white;
+}
+
+@media (max-width: 800px) {
+  .admin-config-grid,
+  .admin-color-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-config-form {
+    padding: 18px;
+  }
+
+  .admin-header > div {
+    gap: 7px;
+  }
+}

@@ -17,10 +17,13 @@
 //   // ...
 // }
 
-import config from "@/data/site-config.json";
+import { loadSiteConfig } from "@/lib/runtime-config";
 import { GiftCatalogV2 } from "./gift-catalog-v2";
 import type { Gift, SiteConfig } from "@/types/gift";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const config = await loadSiteConfig();
   return <GiftCatalogV2 gifts={[] as Gift[]} config={config as SiteConfig} />;
 }

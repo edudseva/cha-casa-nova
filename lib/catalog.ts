@@ -1,9 +1,8 @@
 import { env } from "cloudflare:workers";
 import localGifts from "@/data/gifts.json";
-import siteConfig from "@/data/site-config.json";
+import { loadSiteConfig } from "@/lib/runtime-config";
 import type { Gift, GiftPriority } from "@/types/gift";
 
-const SHEET_CSV_URL = siteConfig.giftSheetCsvUrl;
 const CACHE_ID = 1;
 
 const allowedRetailers = [
@@ -194,7 +193,8 @@ async function cachedCatalog() {
 
 export async function loadCatalog(): Promise<{ gifts: Gift[]; source: "google-sheets" | "database-cache" }> {
   try {
-    const response = await fetch(SHEET_CSV_URL, { cache: "no-store", signal: AbortSignal.timeout(15_000), headers: { accept: "text/csv" } });
+    const siteConfig = await loadSiteConfig();
+    const response = await fetch(siteConfig.giftSheetCsvUrl, { cache: "no-store", signal: AbortSignal.timeout(15_000), headers: { accept: "text/csv" } });
     if (!response.ok) throw new Error(`Google Sheets returned ${response.status}`);
     const gifts = giftsFromSheet(await response.text());
     try {

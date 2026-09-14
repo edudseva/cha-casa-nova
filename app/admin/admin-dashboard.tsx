@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Check, Download, Gift, Heart, Home, RefreshCw, RotateCcw } from "lucide-react";
+import { Check, Download, Gift, Heart, Home, Palette, RefreshCw, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -74,7 +74,7 @@ export function AdminDashboard({ displayName }: { displayName: string }) {
     <main className="admin-page">
       <header className="admin-header">
         <Link className="brand" href="/"><span className="brand-mark"><Home size={18} /></span><span>Nosso cantinho</span></Link>
-        <div><span>Olá, {displayName}</span><Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw /> Atualizar</Button></div>
+        <div><span>Olá, {displayName}</span><Button asChild variant="outline"><Link href="/admin/personalizacao"><Palette /> Personalização</Link></Button><Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw /> Atualizar</Button></div>
       </header>
       <section className="admin-shell">
         <div className="admin-heading"><p className="eyebrow">Área privada</p><h1>Controle do chá</h1><p>Confira presentes e contribuições declaradas antes de considerar cada registro concluído.</p></div>
