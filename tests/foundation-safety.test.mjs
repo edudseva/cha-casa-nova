@@ -62,3 +62,30 @@ test("documentação exige isolamento integral de homologação", () => {
   }
   assert.match(guide, /não podem compartilhar/i);
 });
+
+test("administração exige conta autorizada também nas APIs", () => {
+  const auth = read("lib/admin-auth.ts");
+  const adminPage = read("app/admin/page.tsx");
+  const configPage = read("app/admin/personalizacao/page.tsx");
+  const adminApi = read("app/api/admin/route.ts");
+  const configApi = read("app/api/admin/config/route.ts");
+
+  assert.match(auth, /ADMIN_EMAIL/);
+  assert.match(auth, /configuredEmails\(\)\.has/);
+  assert.match(adminPage, /requireAdminPage/);
+  assert.match(configPage, /requireAdminPage/);
+  assert.match(adminApi, /requireAdminApi/);
+  assert.match(configApi, /requireAdminApi/);
+});
+
+test("chave Pix não retorna para o formulário administrativo", () => {
+  const runtimeConfig = read("lib/runtime-config.ts");
+  const form = read("app/admin/personalizacao/personalization-form.tsx");
+  const publicPixApi = read("app/api/pix/route.ts");
+
+  assert.match(runtimeConfig, /const \{ enabled, receiver, city, hasKey \} = await loadPixConfig\(\)/);
+  assert.match(runtimeConfig, /return \{ enabled, receiver, city, hasKey \};/);
+  assert.match(form, /type="password"/);
+  assert.match(form, /Deixe vazio para mantê-la/);
+  assert.doesNotMatch(publicPixApi, /pixKey|pix_key/);
+});
