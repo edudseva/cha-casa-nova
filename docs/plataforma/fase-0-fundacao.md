@@ -44,7 +44,7 @@ Esta fase cria as salvaguardas para evoluir o site atual para uma plataforma mul
 - [x] Configurar ambiente exclusivo com `APP_ENV=homologation`; nenhum segredo ou Pix real foi copiado.
 - [ ] Executar exportação real da produção e validar integridade do arquivo.
 - [ ] Restaurar a cópia exclusivamente no D1 de homologação.
-- [ ] Executar testes funcionais contra homologação.
+- [x] Executar testes funcionais contra homologação.
 - [x] Registrar o plano de retorno antes de qualquer migração futura.
 
 ## Homologação provisionada
@@ -55,7 +55,17 @@ Esta fase cria as salvaguardas para evoluir o site atual para uma plataforma mul
 - Tabelas confirmadas: `catalog_cache`, `contributions`, `pix_config`, `reservations` e `site_config`.
 - Variável de identificação: `APP_ENV=homologation`.
 - Conta proprietária incluída na lista administrativa da homologação; o endereço não é versionado no Git.
-- Segredos e chave Pix de produção: ausentes.
+- Nenhum segredo ou chave Pix foi copiado automaticamente da produção; o valor da homologação é administrado apenas pela área protegida.
+
+## Validação funcional da homologação
+
+Em 15 de setembro de 2026, a conta proprietária confirmou o acesso à área administrativa e o salvamento da configuração. A conferência técnica, sem leitura ou exposição da chave Pix, confirmou:
+
+- registro de configuração geral persistido no D1 exclusivo da homologação;
+- registro de Pix ativo, com chave, favorecido e cidade preenchidos;
+- requisição administrativa de salvamento concluída com resultado normal no Worker;
+- ausência de erro de execução associado à operação validada;
+- proteção da página e das APIs administrativas preservada.
 
 ## Produção identificada sem alteração
 
