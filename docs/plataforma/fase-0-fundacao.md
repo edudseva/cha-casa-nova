@@ -56,6 +56,15 @@ Esta fase cria as salvaguardas para evoluir o site atual para uma plataforma mul
 - Variável de identificação: `APP_ENV=homologation`.
 - Segredos e chave Pix de produção: ausentes.
 
+## Produção identificada sem alteração
+
+- Projeto Sites: `Chá de Casa Nova`.
+- URL pública preservada: `https://cha.evametodo.com.br`.
+- Projeto e banco físicos distintos da homologação.
+- Binding de produção confirmado em modo somente leitura: `DB`.
+- Tabelas de produção confirmadas em modo somente leitura: `catalog_cache`, `contributions` e `reservations`.
+- Nenhuma variável, versão, domínio, tabela ou registro de produção foi modificado durante a Fase 0.
+
 ## Backup
 
 Pré-requisitos: autenticação válida do Wrangler no ambiente autorizado e nome explícito do banco.
@@ -65,6 +74,12 @@ npm run db:backup -- --database NOME_DO_BANCO --output backups/producao-AAAA-MM-
 ```
 
 O comando apenas exporta dados, recusa sobrescrever um arquivo existente e gera um arquivo `.sha256` para conferência de integridade. A pasta `backups/` é ignorada pelo Git.
+
+### Estado da execução real
+
+A exportação real continua pendente porque o ambiente de execução atual não possui uma sessão autenticada do Wrangler. O conector Sites permite confirmar o projeto, o binding e as tabelas em modo somente leitura, mas não fornece exportação SQL nem restauração D1. Para preservar a integridade e a privacidade dos dados, não será montado um pseudo-backup a partir de páginas de registros.
+
+Assim que o Wrangler estiver autenticado no ambiente autorizado, execute o comando acima informando explicitamente o banco de produção. Não inclua o arquivo SQL ou seu conteúdo em commits, logs públicos ou mensagens.
 
 ## Restauração de homologação
 
