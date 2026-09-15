@@ -8,7 +8,7 @@ function csvCell(value: unknown) {
 }
 
 export async function GET(request: Request) {
-  const auth = await requireAdminApi();
+  const auth = await requireAdminApi("reports.export");
   if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.status });
   const type = new URL(request.url).searchParams.get("type");
   const isPix = type === "pix";

@@ -64,14 +64,16 @@ test("documentação exige isolamento integral de homologação", () => {
 });
 
 test("administração exige conta autorizada também nas APIs", () => {
-  const auth = read("lib/admin-auth.ts");
+  const auth = read("lib/event-access.ts");
   const adminPage = read("app/admin/page.tsx");
   const configPage = read("app/admin/personalizacao/page.tsx");
   const adminApi = read("app/api/admin/route.ts");
   const configApi = read("app/api/admin/config/route.ts");
 
   assert.match(auth, /ADMIN_EMAIL/);
-  assert.match(auth, /configuredEmails\(\)\.has/);
+  assert.match(auth, /configuredAdminEmails\(\)\.has/);
+  assert.match(auth, /m\.status = 'active'/);
+  assert.match(auth, /roleHasPermission/);
   assert.match(adminPage, /requireAdminPage/);
   assert.match(configPage, /requireAdminPage/);
   assert.match(adminApi, /requireAdminApi/);
@@ -92,7 +94,7 @@ test("chave Pix não retorna para o formulário administrativo", () => {
 
 test("proprietário da plataforma e administrador do evento têm autorizações separadas", () => {
   const platformAccess = read("lib/platform-access.ts");
-  const adminAccess = read("lib/admin-auth.ts");
+  const adminAccess = read("lib/event-access.ts");
   const platformPage = read("app/plataforma/page.tsx");
 
   assert.match(platformAccess, /PLATFORM_OWNER_EMAILS/);
@@ -112,12 +114,14 @@ test("primeira fundação multi-site é aditiva", () => {
 
 test("convites são protegidos e ativam acesso somente para o e-mail autenticado", () => {
   const route = read("app/api/plataforma/membros/route.ts");
-  const adminAuth = read("lib/admin-auth.ts");
+  const acceptance = read("app/api/conta/convites/route.ts");
   assert.match(route, /requirePlatformOwnerApi/);
   assert.match(route, /sameOrigin/);
   assert.match(route, /status = 'pending'/);
-  assert.match(adminAuth, /lower\(email\) = \?/);
-  assert.match(adminAuth, /expires_at >= CURRENT_TIMESTAMP/);
+  assert.match(acceptance, /getChatGPTUser/);
+  assert.match(acceptance, /lower\(email\) = \?/);
+  assert.match(acceptance, /expires_at >= CURRENT_TIMESTAMP/);
+  assert.match(acceptance, /invitation\.accepted/);
 });
 
 test("plano mestre termina com uma fase formal de segurança", () => {

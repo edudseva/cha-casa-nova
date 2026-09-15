@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, CircleDollarSign, Clock3, ExternalLink, Gift, Home, LayoutDashboard, Palette, ShieldCheck, Users } from "lucide-react";
+import { Building2, CircleDollarSign, Clock3, ExternalLink, Gift, Home, LayoutDashboard, Palette, ShieldCheck, UserRound, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { requirePlatformOwnerPage } from "@/lib/platform-access";
 import { loadPlatformWorkspace } from "@/lib/platform-workspace";
@@ -15,6 +15,10 @@ const auditLabels: Record<string, string> = {
   "invitation.created": "Convite criado",
   "invitation.cancelled": "Convite cancelado",
   "invitation.resent": "Convite reenviado",
+  "invitation.accepted": "Convite aceito",
+  "invitation.declined": "Convite recusado",
+  "membership.role_updated": "Perfil de acesso atualizado",
+  "membership.revoked": "Acesso revogado",
 };
 
 export const dynamic = "force-dynamic";
@@ -31,7 +35,7 @@ export default async function PlatformPage() {
   return <main className="platform-page">
     <header className="admin-header">
       <Link className="brand" href="/"><span className="brand-mark"><Building2 size={18} /></span><span><small>Visão do proprietário</small>Plataforma de eventos</span></Link>
-      <div><span className="admin-user"><strong>{user.displayName}</strong></span><Button asChild variant="outline"><Link href="/admin"><Home /> Painel do evento</Link></Button></div>
+      <div><span className="admin-user"><strong>{user.displayName}</strong><small>Proprietário</small></span><Button asChild variant="outline"><Link href="/conta"><UserRound /> Conta</Link></Button><Button asChild variant="outline"><Link href="/admin"><Home /> Painel do evento</Link></Button></div>
     </header>
 
     <section className="platform-shell">

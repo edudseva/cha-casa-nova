@@ -8,7 +8,6 @@ import {
 import type { SiteConfig } from "@/types/gift";
 import { createAuditStatement } from "@/lib/audit-log";
 import { CURRENT_SITE_ID } from "@/lib/site-context";
-import { env } from "cloudflare:workers";
 
 function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
@@ -19,7 +18,7 @@ function sameOrigin(request: Request) {
 }
 
 export async function GET() {
-  const auth = await requireAdminApi();
+  const auth = await requireAdminApi("event.settings.edit");
 
   if (!auth.ok) {
     return Response.json(
@@ -43,7 +42,7 @@ export async function PATCH(request: Request) {
     );
   }
 
-  const auth = await requireAdminApi();
+  const auth = await requireAdminApi("event.settings.edit");
 
   if (!auth.ok) {
     return Response.json(

@@ -4,7 +4,7 @@ import { CURRENT_SITE_ID } from "@/lib/platform-workspace";
 import { createAuditStatement } from "@/lib/audit-log";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const INVITABLE_ROLES = new Set(["editor"]);
+const INVITABLE_ROLES = new Set(["editor", "viewer"]);
 
 function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
@@ -16,7 +16,7 @@ async function accessSnapshot() {
     env.DB.prepare(`SELECT u.id, u.email, u.display_name, m.role, m.status
       FROM site_memberships m
       INNER JOIN platform_users u ON u.id = m.user_id
-      WHERE m.site_id = ?
+      WHERE m.site_id = ? AND m.status = 'active'
       ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'editor' THEN 1 ELSE 2 END, u.display_name`).bind(CURRENT_SITE_ID),
     env.DB.prepare(`SELECT id, email, role,
       CASE WHEN status = 'pending' AND expires_at < CURRENT_TIMESTAMP THEN 'expired' ELSE status END AS status,
@@ -25,7 +25,16 @@ async function accessSnapshot() {
       WHERE site_id = ?
       ORDER BY created_at DESC`).bind(CURRENT_SITE_ID),
   ]);
-  return { members: members.results, invitations: invitations.results };
+  return {
+    members: members.results.map((row) => ({
+      id: String(row.id), email: String(row.email), displayName: String(row.display_name || row.email),
+      role: String(row.role), status: String(row.status),
+    })),
+    invitations: invitations.results.map((row) => ({
+      id: Number(row.id), email: String(row.email), role: String(row.role), status: String(row.status),
+      expiresAt: String(row.expires_at), createdAt: String(row.created_at),
+    })),
+  };
 }
 
 export async function GET() {
@@ -80,7 +89,36 @@ export async function PATCH(request: Request) {
     return Response.json({ error: "Dados enviados em excesso." }, { status: 413 });
   }
 
-  const body = await request.json().catch(() => null) as { id?: number; action?: string } | null;
+  const body = await request.json().catch(() => null) as { kind?: string; id?: number | string; action?: string; role?: string } | null;
+
+  if (body?.kind === "member") {
+    const userId = String(body.id ?? "");
+    if (!userId || userId.length > 200 || !["role", "revoke"].includes(body.action ?? "")) {
+      return Response.json({ error: "Atualização de acesso inválida." }, { status: 400 });
+    }
+    const membership = await env.DB.prepare(`SELECT role FROM site_memberships
+      WHERE site_id = ? AND user_id = ? AND status = 'active' LIMIT 1`)
+      .bind(CURRENT_SITE_ID, userId).first<{ role: string }>();
+    if (!membership) return Response.json({ error: "Acesso não encontrado." }, { status: 404 });
+    if (membership.role === "owner") return Response.json({ error: "O acesso do responsável principal não pode ser alterado por esta ação." }, { status: 409 });
+
+    if (body.action === "role") {
+      if (!INVITABLE_ROLES.has(body.role ?? "")) return Response.json({ error: "Selecione um perfil válido." }, { status: 400 });
+      await env.DB.batch([
+        env.DB.prepare(`UPDATE site_memberships SET role = ? WHERE site_id = ? AND user_id = ? AND status = 'active'`)
+          .bind(body.role, CURRENT_SITE_ID, userId),
+        createAuditStatement({ siteId: CURRENT_SITE_ID, actor: auth.user, action: "membership.role_updated", entityType: "membership", entityId: userId, metadata: { from: membership.role, to: body.role } }),
+      ]);
+    } else {
+      await env.DB.batch([
+        env.DB.prepare(`UPDATE site_memberships SET status = 'revoked' WHERE site_id = ? AND user_id = ? AND status = 'active'`)
+          .bind(CURRENT_SITE_ID, userId),
+        createAuditStatement({ siteId: CURRENT_SITE_ID, actor: auth.user, action: "membership.revoked", entityType: "membership", entityId: userId, metadata: { role: membership.role } }),
+      ]);
+    }
+    return Response.json({ ok: true, ...(await accessSnapshot()) });
+  }
+
   const id = Number(body?.id);
   if (!Number.isInteger(id) || id < 1 || !["cancel", "resend"].includes(body?.action ?? "")) {
     return Response.json({ error: "Atualização inválida." }, { status: 400 });

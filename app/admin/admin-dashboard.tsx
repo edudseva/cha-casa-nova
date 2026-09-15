@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Building2, Check, CircleDollarSign, Download, Gift, Home, LayoutDashboard, Palette, RefreshCw, RotateCcw } from "lucide-react";
+import { Building2, Check, CircleDollarSign, Download, Gift, Home, LayoutDashboard, Palette, RefreshCw, RotateCcw, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,9 @@ function deliveryLabel(value: string) {
   return value === "casal" ? "Endereço do casal" : value === "convidado" ? "Convidado receberá" : "Outro endereço";
 }
 
-export function AdminDashboard({ displayName, showPlatformLink }: { displayName: string; showPlatformLink: boolean }) {
+const roleLabels: Record<string, string> = { owner: "Responsável principal", editor: "Administrador", viewer: "Somente leitura" };
+
+export function AdminDashboard({ displayName, role, canManage, showPlatformLink }: { displayName: string; role: string; canManage: boolean; showPlatformLink: boolean }) {
   const [data, setData] = useState<AdminData>({ reservations: [], contributions: [] });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
@@ -74,7 +76,7 @@ export function AdminDashboard({ displayName, showPlatformLink }: { displayName:
     <main className="admin-page">
       <header className="admin-header">
         <Link className="brand" href="/"><span className="brand-mark"><Home size={18} /></span><span><small>Painel do evento</small>Nosso cantinho</span></Link>
-        <div><span className="admin-user">Olá, <strong>{displayName}</strong></span>{showPlatformLink && <Button asChild variant="outline"><Link href="/plataforma"><Building2 /> Plataforma</Link></Button>}<Button asChild variant="outline"><Link href="/admin/personalizacao"><Palette /> Personalização</Link></Button><Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw /> Atualizar</Button></div>
+        <div><span className="admin-user"><strong>{displayName}</strong><small>{roleLabels[role] ?? role}</small></span>{showPlatformLink && <Button asChild variant="outline"><Link href="/plataforma"><Building2 /> Plataforma</Link></Button>}{canManage && <Button asChild variant="outline"><Link href="/admin/personalizacao"><Palette /> Personalização</Link></Button>}<Button asChild variant="outline"><Link href="/conta"><UserRound /> Conta</Link></Button><Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw /> Atualizar</Button></div>
       </header>
       <section className="admin-shell">
         <div className="admin-heading-row">
@@ -94,7 +96,7 @@ export function AdminDashboard({ displayName, showPlatformLink }: { displayName:
             <p className="admin-mobile-hint">Deslize a tabela para o lado para consultar todos os dados.</p>
             <div className="admin-table-wrap"><Table><TableHeader><TableRow><TableHead>Presente</TableHead><TableHead>Convidado</TableHead><TableHead>Entrega</TableHead><TableHead>Pedido</TableHead><TableHead>Data</TableHead><TableHead>Situação</TableHead><TableHead className="text-right">Ação</TableHead></TableRow></TableHeader><TableBody>
               {loading && <TableRow><TableCell colSpan={7} className="admin-empty">Carregando presentes...</TableCell></TableRow>}
-              {data.reservations.map((item) => <TableRow key={item.id}><TableCell><strong>{item.gift_name}</strong>{item.message && <small>{item.message}</small>}</TableCell><TableCell>{item.guest_name}<small>{item.guest_contact || "Sem contato"}</small></TableCell><TableCell>{deliveryLabel(item.delivery_choice)}</TableCell><TableCell>{item.order_reference || "—"}</TableCell><TableCell>{date.format(new Date(`${item.created_at}Z`))}</TableCell><TableCell><Badge variant={item.status === "purchased" ? "default" : "secondary"}>{item.status === "purchased" ? "Confirmado" : "Liberado"}</Badge></TableCell><TableCell className="text-right"><Button size="sm" variant="outline" disabled={updating === `reservation-${item.id}`} onClick={() => void update("reservation", item.id, item.status === "purchased" ? "cancelled" : "purchased")}>{item.status === "purchased" ? <><RotateCcw /> Liberar</> : <><Check /> Restaurar</>}</Button></TableCell></TableRow>)}
+              {data.reservations.map((item) => <TableRow key={item.id}><TableCell><strong>{item.gift_name}</strong>{item.message && <small>{item.message}</small>}</TableCell><TableCell>{item.guest_name}<small>{item.guest_contact || "Sem contato"}</small></TableCell><TableCell>{deliveryLabel(item.delivery_choice)}</TableCell><TableCell>{item.order_reference || "—"}</TableCell><TableCell>{date.format(new Date(`${item.created_at}Z`))}</TableCell><TableCell><Badge variant={item.status === "purchased" ? "default" : "secondary"}>{item.status === "purchased" ? "Confirmado" : "Liberado"}</Badge></TableCell><TableCell className="text-right">{canManage ? <Button size="sm" variant="outline" disabled={updating === `reservation-${item.id}`} onClick={() => void update("reservation", item.id, item.status === "purchased" ? "cancelled" : "purchased")}>{item.status === "purchased" ? <><RotateCcw /> Liberar</> : <><Check /> Restaurar</>}</Button> : <span className="admin-read-only">Somente leitura</span>}</TableCell></TableRow>)}
               {!loading && !data.reservations.length && <TableRow><TableCell colSpan={7} className="admin-empty">Nenhum presente confirmado.</TableCell></TableRow>}
             </TableBody></Table></div>
           </TabsContent>
@@ -103,7 +105,7 @@ export function AdminDashboard({ displayName, showPlatformLink }: { displayName:
             <p className="admin-mobile-hint">Deslize a tabela para o lado para consultar todos os dados.</p>
             <div className="admin-table-wrap"><Table><TableHeader><TableRow><TableHead>Convidado</TableHead><TableHead>Valor</TableHead><TableHead>Referência</TableHead><TableHead>Data</TableHead><TableHead>Situação</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader><TableBody>
               {loading && <TableRow><TableCell colSpan={6} className="admin-empty">Carregando contribuições...</TableCell></TableRow>}
-              {data.contributions.map((item) => <TableRow key={item.id}><TableCell><strong>{item.guest_name}</strong><small>{item.guest_contact || "Sem contato"}</small>{item.message && <small>{item.message}</small>}</TableCell><TableCell>{money.format(item.amount_cents / 100)}</TableCell><TableCell className="admin-reference">{item.transaction_reference || "—"}</TableCell><TableCell>{date.format(new Date(`${item.created_at}Z`))}</TableCell><TableCell><Badge variant={item.payment_status === "confirmed" ? "default" : "secondary"}>{item.payment_status === "confirmed" ? "Conferido" : item.payment_status === "rejected" ? "Não localizado" : "Declarado"}</Badge></TableCell><TableCell className="admin-actions"><Button size="sm" disabled={updating === `contribution-${item.id}`} onClick={() => void update("contribution", item.id, "confirmed")}><Check /> Conferir</Button><Button size="sm" variant="outline" disabled={updating === `contribution-${item.id}`} onClick={() => void update("contribution", item.id, "rejected")}>Não localizado</Button></TableCell></TableRow>)}
+              {data.contributions.map((item) => <TableRow key={item.id}><TableCell><strong>{item.guest_name}</strong><small>{item.guest_contact || "Sem contato"}</small>{item.message && <small>{item.message}</small>}</TableCell><TableCell>{money.format(item.amount_cents / 100)}</TableCell><TableCell className="admin-reference">{item.transaction_reference || "—"}</TableCell><TableCell>{date.format(new Date(`${item.created_at}Z`))}</TableCell><TableCell><Badge variant={item.payment_status === "confirmed" ? "default" : "secondary"}>{item.payment_status === "confirmed" ? "Conferido" : item.payment_status === "rejected" ? "Não localizado" : "Declarado"}</Badge></TableCell><TableCell className="admin-actions">{canManage ? <><Button size="sm" disabled={updating === `contribution-${item.id}`} onClick={() => void update("contribution", item.id, "confirmed")}><Check /> Conferir</Button><Button size="sm" variant="outline" disabled={updating === `contribution-${item.id}`} onClick={() => void update("contribution", item.id, "rejected")}>Não localizado</Button></> : <span className="admin-read-only">Somente leitura</span>}</TableCell></TableRow>)}
               {!loading && !data.contributions.length && <TableRow><TableCell colSpan={6} className="admin-empty">Nenhuma contribuição registrada.</TableCell></TableRow>}
             </TableBody></Table></div>
           </TabsContent>

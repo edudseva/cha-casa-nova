@@ -1456,3 +1456,51 @@ section[id] { scroll-margin-top: 72px; }
   .admin-color-grid { gap: 14px; }
   .admin-config-save p { display: none; }
 }
+
+/* Phase 2 — identity, roles and account access */
+.admin-user { display: grid; gap: 2px; line-height: 1.1; text-align: right; }
+.admin-user small { color: #aebfb4; font-size: .65rem; font-weight: 650; }
+.admin-read-only { display: inline-flex; padding: 5px 9px; color: #68756c; background: #edf1eb; border-radius: 999px; font-size: .7rem; font-weight: 750; white-space: nowrap; }
+.platform-invite-form { grid-template-columns: minmax(230px, 1fr) minmax(180px, .45fr) auto; }
+.platform-role-field [data-slot="select-trigger"] { min-height: 40px; background: #fff; }
+.platform-member-actions { display: flex; align-items: center; justify-content: flex-end; gap: 7px; }
+.platform-member-actions [data-slot="select-trigger"] { width: 154px; min-height: 34px; background: #fff; }
+
+.account-shell { display: grid; gap: 18px; max-width: 1080px; }
+.account-profile-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 20px; align-items: center; padding: 28px; color: #e7efe9; background: linear-gradient(135deg, #173c2d, #234c39); border-radius: 22px; box-shadow: 0 18px 48px rgba(23,60,45,.16); }
+.account-profile-card > span { display: grid; place-items: center; width: 54px; height: 54px; color: #fff; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14); border-radius: 16px; }
+.account-profile-card .eyebrow { margin-bottom: 7px; color: #e4aa8d; }
+.account-profile-card h1 { max-width: none; margin: 0; color: #fff; font-size: clamp(1.8rem, 4vw, 2.65rem); line-height: 1.05; }
+.account-profile-card p:last-child { margin: 6px 0 0; color: #b9c9bf; overflow-wrap: anywhere; }
+.account-profile-card [data-slot="badge"] { color: #244c38; background: #e3eee6; }
+.account-section { overflow: hidden; background: var(--control-surface); border: 1px solid var(--control-border); border-radius: 20px; box-shadow: var(--control-shadow); }
+.account-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 22px 24px; border-bottom: 1px solid var(--control-border); }
+.account-section-heading .eyebrow { margin-bottom: 6px; color: var(--control-copper); font-size: .66rem; }
+.account-section-heading h2 { margin: 0; color: var(--control-forest); font-size: 1.5rem; }
+.account-section-heading > span { flex: 0 0 auto; padding: 6px 10px; color: #53665a; background: #e9f0e9; border-radius: 999px; font-size: .7rem; font-weight: 800; }
+.account-list { display: grid; padding: 8px 24px 20px; }
+.account-list article { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 17px 0; border-bottom: 1px solid #e5e9e3; }
+.account-list article:last-child { border-bottom: 0; }
+.account-list article > div:first-child { display: grid; gap: 4px; min-width: 0; }
+.account-list strong { color: var(--control-ink); font-size: .94rem; }
+.account-list span { color: #496453; font-size: .79rem; font-weight: 700; }
+.account-list small { display: inline-flex; align-items: center; gap: 5px; color: var(--control-muted); font-size: .72rem; }
+.account-list small svg { width: 14px; }
+.account-actions { display: flex; gap: 8px; }
+.account-empty { margin: 12px 0 0; padding: 18px; color: var(--control-muted); background: #f4f6f2; border-radius: 12px; font-size: .85rem; }
+
+@media (max-width: 800px) {
+  .platform-invite-form { grid-template-columns: 1fr; }
+  .account-profile-card { grid-template-columns: auto minmax(0, 1fr); padding: 22px; }
+  .account-profile-card [data-slot="badge"] { grid-column: 1 / -1; }
+}
+
+@media (max-width: 560px) {
+  .account-list { padding-inline: 18px; }
+  .account-list article { align-items: stretch; flex-direction: column; }
+  .account-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .account-actions button { width: 100%; }
+  .account-section-heading { padding-inline: 18px; }
+  .platform-member-actions { justify-content: flex-start; width: 100%; }
+  .platform-member-actions [data-slot="select-trigger"] { flex: 1; width: auto; }
+}

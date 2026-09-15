@@ -1,23 +1,23 @@
 import Link from "next/link";
 import { Home } from "lucide-react";
-import { requireAdminPage } from "@/lib/admin-auth";
+import { requireAdminPageAccess } from "@/lib/admin-auth";
 import { loadPixAdminConfig, loadSiteConfig } from "@/lib/runtime-config";
 import { PersonalizationForm } from "./personalization-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function PersonalizationPage() {
-  const user = await requireAdminPage();
+  const result = await requireAdminPageAccess("event.settings.edit", "/admin/personalizacao");
 
-  if (!user) {
+  if (!result) {
     return (
       <main className="admin-denied">
         <Home size={34} />
         <h1>Acesso restrito</h1>
         <p>
-          Esta área é exclusiva dos responsáveis pelo chá.
+          Seu perfil não permite alterar as configurações deste evento.
         </p>
-        <Link href="/">Voltar ao site</Link>
+        <Link href="/conta">Ver minha conta e acessos</Link>
       </main>
     );
   }

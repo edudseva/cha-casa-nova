@@ -101,3 +101,7 @@ Comandos de segurança:
 - `npm run test:foundation`: valida as salvaguardas sem acessar serviços externos.
 - `npm run db:backup -- --database NOME --output backups/arquivo.sql`: exporta um D1 remoto sem sobrescrever arquivos.
 - `npm run db:restore:homologation -- --environment homologation --database NOME --file backups/arquivo.sql --confirm RESTORE_HOMOLOGATION`: restaura somente em homologação.
+
+## Plataforma — Fase 2
+
+A autenticação usa a identidade segura fornecida pelo ambiente, enquanto as permissões do evento são avaliadas no servidor. A área `/conta` reúne identidade, sessão, convites e vínculos; os perfis `owner`, `editor` e `viewer` seguem a matriz documentada em [`docs/plataforma/fase-2-autenticacao-autorizacao.md`](docs/plataforma/fase-2-autenticacao-autorizacao.md).
