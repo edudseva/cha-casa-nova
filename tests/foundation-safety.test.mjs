@@ -26,7 +26,7 @@ test("baseline do esquema atual permanece documentada e versionada", () => {
   const baseline = read("docs/plataforma/schema-producao-baseline.md");
   for (const table of ["reservations", "contributions", "catalog_cache"]) {
     assert.match(schema, new RegExp(`sqliteTable\\("${table}"`));
-    assert.match(baseline, new RegExp(`Tabela \\`${table}\\``));
+    assert.match(baseline, new RegExp("Tabela `" + table + "`"));
   }
   for (const migration of [
     "drizzle/0000_old_ser_duncan.sql",
