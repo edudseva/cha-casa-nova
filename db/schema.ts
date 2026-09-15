@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const reservations = sqliteTable("reservations", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -44,3 +44,34 @@ export const pixConfig = sqliteTable("pix_config", {
   enabled: integer("enabled").notNull().default(1),
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const platformUsers = sqliteTable("platform_users", {
+  id: text("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  displayName: text("display_name").notNull().default(""),
+  platformRole: text("platform_role").notNull().default("user"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const eventSites = sqliteTable("event_sites", {
+  id: text("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  name: text("name").notNull(),
+  status: text("status").notNull().default("draft"),
+  environment: text("environment").notNull().default("homologation"),
+  createdBy: text("created_by").notNull().references(() => platformUsers.id),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const siteMemberships = sqliteTable("site_memberships", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  siteId: text("site_id").notNull().references(() => eventSites.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => platformUsers.id, { onDelete: "cascade" }),
+  role: text("role").notNull().default("owner"),
+  status: text("status").notNull().default("active"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  uniqueIndex("idx_site_memberships_site_user").on(table.siteId, table.userId),
+]);

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Home } from "lucide-react";
 import { requireAdminPage } from "@/lib/admin-auth";
+import { isPlatformOwner } from "@/lib/platform-access";
 import { AdminDashboard } from "./admin-dashboard";
 
 export const dynamic = "force-dynamic";
@@ -18,5 +19,5 @@ export default async function AdminPage() {
     );
   }
 
-  return <AdminDashboard displayName={user.displayName} />;
+  return <AdminDashboard displayName={user.displayName} showPlatformLink={isPlatformOwner(user.email)} />;
 }

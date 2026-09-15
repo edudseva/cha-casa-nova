@@ -3,3 +3,5 @@
 PIX_KEY="sua-chave-pix"
 PIX_RECEIVER="NOME COMPLETO DO FAVORECIDO"
 PIX_CITY="BRASILIA"
+ADMIN_EMAILS="administrador@exemplo.com"
+PLATFORM_OWNER_EMAILS="proprietario@exemplo.com"

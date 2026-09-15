@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Check, Download, Gift, Heart, Home, Palette, RefreshCw, RotateCcw } from "lucide-react";
+import { Building2, Check, Download, Gift, Heart, Home, Palette, RefreshCw, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ function deliveryLabel(value: string) {
   return value === "casal" ? "Endereço do casal" : value === "convidado" ? "Convidado receberá" : "Outro endereço";
 }
 
-export function AdminDashboard({ displayName }: { displayName: string }) {
+export function AdminDashboard({ displayName, showPlatformLink }: { displayName: string; showPlatformLink: boolean }) {
   const [data, setData] = useState<AdminData>({ reservations: [], contributions: [] });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
@@ -74,7 +74,7 @@ export function AdminDashboard({ displayName }: { displayName: string }) {
     <main className="admin-page">
       <header className="admin-header">
         <Link className="brand" href="/"><span className="brand-mark"><Home size={18} /></span><span>Nosso cantinho</span></Link>
-        <div><span>Olá, {displayName}</span><Button asChild variant="outline"><Link href="/admin/personalizacao"><Palette /> Personalização</Link></Button><Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw /> Atualizar</Button></div>
+        <div><span>Olá, {displayName}</span>{showPlatformLink && <Button asChild variant="outline"><Link href="/plataforma"><Building2 /> Plataforma</Link></Button>}<Button asChild variant="outline"><Link href="/admin/personalizacao"><Palette /> Personalização</Link></Button><Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw /> Atualizar</Button></div>
       </header>
       <section className="admin-shell">
         <div className="admin-heading"><p className="eyebrow">Área privada</p><h1>Controle do chá</h1><p>Confira presentes e contribuições declaradas antes de considerar cada registro concluído.</p></div>

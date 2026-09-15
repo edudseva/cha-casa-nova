@@ -89,3 +89,22 @@ test("chave Pix não retorna para o formulário administrativo", () => {
   assert.match(form, /Deixe vazio para mantê-la/);
   assert.doesNotMatch(publicPixApi, /pixKey|pix_key/);
 });
+
+test("proprietário da plataforma e administrador do evento têm autorizações separadas", () => {
+  const platformAccess = read("lib/platform-access.ts");
+  const adminAccess = read("lib/admin-auth.ts");
+  const platformPage = read("app/plataforma/page.tsx");
+
+  assert.match(platformAccess, /PLATFORM_OWNER_EMAILS/);
+  assert.match(adminAccess, /ADMIN_EMAILS/);
+  assert.match(platformPage, /requirePlatformOwnerPage/);
+  assert.doesNotMatch(platformAccess, /ADMIN_EMAILS/);
+});
+
+test("primeira fundação multi-site é aditiva", () => {
+  const schema = read("db/schema.ts");
+  for (const table of ["platform_users", "event_sites", "site_memberships"]) {
+    assert.match(schema, new RegExp(`sqliteTable\\("${table}"`));
+  }
+  assert.match(schema, /idx_site_memberships_site_user/);
+});
