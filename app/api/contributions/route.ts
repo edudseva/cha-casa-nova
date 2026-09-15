@@ -1,4 +1,5 @@
 import { env } from "cloudflare:workers";
+import { CURRENT_SITE_ID } from "@/lib/site-context";
 
 type ContributionPayload = {
   amount?: number;
@@ -38,8 +39,8 @@ export async function POST(request: Request) {
     }
 
     await env.DB.prepare(
-      "INSERT INTO contributions (guest_name, guest_contact, amount_cents, transaction_reference, message, payment_status) VALUES (?, ?, ?, ?, ?, ?)"
-    ).bind(guestName, guestContact, amountCents, transactionReference, message, "declared").run();
+      "INSERT INTO contributions (site_id, guest_name, guest_contact, amount_cents, transaction_reference, message, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    ).bind(CURRENT_SITE_ID, guestName, guestContact, amountCents, transactionReference, message, "declared").run();
 
     return Response.json({ ok: true }, { status: 201 });
   } catch (error) {

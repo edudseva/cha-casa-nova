@@ -5,7 +5,7 @@ Este documento é a referência de sequência, escopo e critérios de avanço da
 | Fase | Objetivo | Situação |
 | --- | --- | --- |
 | 0 — Fundação e proteção da produção | Isolar homologação, banco, variáveis e publicação; preparar backup, restauração e retorno seguro. | Concluída com bloqueios externos documentados |
-| 1 — Base multiusuário | Estruturar usuários, sites, vínculos, papéis, convites, `site_id` e auditoria. | Em andamento |
+| 1 — Base multiusuário | Estruturar usuários, sites, vínculos, papéis, convites, `site_id` e auditoria. | Concluída em homologação |
 | 2 — Autenticação e autorização | Consolidar login, sessões, recuperação, perfis, convites e políticas de acesso. | Planejada |
 | 3 — Painel do casal | Permitir administrar conteúdo, evento, aparência, presentes, Pix, fotos, convidados, relatórios e usuários sem suporte técnico. | Planejada |
 | 4 — Experiência de edição | Implementar salvamento automático, rascunho, publicação, prévia, versões, desfazer, validação e ajuda contextual. | Planejada |

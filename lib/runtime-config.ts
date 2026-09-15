@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import defaults from "@/data/site-config.json";
+import { CURRENT_SITE_ID } from "@/lib/site-context";
 import type { PixAdminConfig, SiteConfig } from "@/types/gift";
 
 type PixEnvironment = { PIX_KEY?: string; PIX_RECEIVER?: string; PIX_CITY?: string };
@@ -96,15 +97,17 @@ export function cleanSiteConfig(input: Partial<SiteConfig>): SiteConfig {
 
 async function ensureTables() {
   await env.DB.batch([
-    env.DB.prepare("CREATE TABLE IF NOT EXISTS site_config (id INTEGER PRIMARY KEY NOT NULL, payload TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL)"),
-    env.DB.prepare("CREATE TABLE IF NOT EXISTS pix_config (id INTEGER PRIMARY KEY NOT NULL, pix_key TEXT NOT NULL, receiver TEXT NOT NULL, city TEXT NOT NULL, enabled INTEGER DEFAULT 1 NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS site_config (id INTEGER PRIMARY KEY NOT NULL, site_id TEXT DEFAULT 'cha-casa-nova-homologacao' NOT NULL, payload TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL)"),
+    env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_site_config_site ON site_config (site_id)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS pix_config (id INTEGER PRIMARY KEY NOT NULL, site_id TEXT DEFAULT 'cha-casa-nova-homologacao' NOT NULL, pix_key TEXT NOT NULL, receiver TEXT NOT NULL, city TEXT NOT NULL, enabled INTEGER DEFAULT 1 NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL)"),
+    env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_pix_config_site ON pix_config (site_id)"),
   ]);
 }
 
 export async function loadSiteConfig(): Promise<SiteConfig> {
   try {
     await ensureTables();
-    const row = await env.DB.prepare("SELECT payload FROM site_config WHERE id = 1").first<{ payload: string }>();
+    const row = await env.DB.prepare("SELECT payload FROM site_config WHERE site_id = ?").bind(CURRENT_SITE_ID).first<{ payload: string }>();
     return row?.payload ? cleanSiteConfig(JSON.parse(row.payload)) : fallback;
   } catch (error) {
     console.error("Could not load site configuration", error);
@@ -115,7 +118,7 @@ export async function loadSiteConfig(): Promise<SiteConfig> {
 export async function saveSiteConfig(input: Partial<SiteConfig>) {
   const config = cleanSiteConfig(input);
   await ensureTables();
-  await env.DB.prepare("INSERT INTO site_config (id, payload, updated_at) VALUES (1, ?, CURRENT_TIMESTAMP) ON CONFLICT(id) DO UPDATE SET payload = excluded.payload, updated_at = CURRENT_TIMESTAMP").bind(JSON.stringify(config)).run();
+  await env.DB.prepare("INSERT INTO site_config (site_id, payload, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(site_id) DO UPDATE SET payload = excluded.payload, updated_at = CURRENT_TIMESTAMP").bind(CURRENT_SITE_ID, JSON.stringify(config)).run();
   return config;
 }
 
@@ -126,7 +129,7 @@ function cleanPixText(value: string, maxLength: number) {
 export async function loadPixConfig(): Promise<PixRuntimeConfig> {
   const fixed = env as unknown as PixEnvironment;
   await ensureTables();
-  const row = await env.DB.prepare("SELECT pix_key, receiver, city, enabled FROM pix_config WHERE id = 1").first<{ pix_key: string; receiver: string; city: string; enabled: number }>();
+  const row = await env.DB.prepare("SELECT pix_key, receiver, city, enabled FROM pix_config WHERE site_id = ?").bind(CURRENT_SITE_ID).first<{ pix_key: string; receiver: string; city: string; enabled: number }>();
   const key = row?.pix_key?.trim() || fixed.PIX_KEY?.trim() || "";
   const receiver = cleanPixText(row?.receiver?.trim() || fixed.PIX_RECEIVER?.trim() || "", 25);
   const city = cleanPixText(row?.city?.trim() || fixed.PIX_CITY?.trim() || "BRASILIA", 15);
@@ -145,6 +148,6 @@ export async function savePixConfig(input: PixInput): Promise<PixAdminConfig> {
   const city = cleanPixText(safeText(input.city, current.city || "BRASILIA", 15), 15);
   const enabled = safeBoolean(input.enabled, current.enabled);
   if (!key || !receiver) throw new Error("Informe a chave Pix e o nome do favorecido.");
-  await env.DB.prepare("INSERT INTO pix_config (id, pix_key, receiver, city, enabled, updated_at) VALUES (1, ?, ?, ?, ?, CURRENT_TIMESTAMP) ON CONFLICT(id) DO UPDATE SET pix_key = excluded.pix_key, receiver = excluded.receiver, city = excluded.city, enabled = excluded.enabled, updated_at = CURRENT_TIMESTAMP").bind(key, receiver, city, enabled ? 1 : 0).run();
+  await env.DB.prepare("INSERT INTO pix_config (site_id, pix_key, receiver, city, enabled, updated_at) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP) ON CONFLICT(site_id) DO UPDATE SET pix_key = excluded.pix_key, receiver = excluded.receiver, city = excluded.city, enabled = excluded.enabled, updated_at = CURRENT_TIMESTAMP").bind(CURRENT_SITE_ID, key, receiver, city, enabled ? 1 : 0).run();
   return { enabled, receiver, city, hasKey: true };
 }

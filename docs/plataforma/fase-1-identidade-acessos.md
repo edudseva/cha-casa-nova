@@ -12,8 +12,8 @@ Esta fase inicia a transformação do site isolado em uma plataforma administrá
 - [x] Manter o painel atual do casal sem perda de funcionalidades.
 - [x] Criar convite e gestão de novos administradores.
 - [x] Criar cadastro assistido de um novo site de evento.
-- [ ] Isolar configurações, presentes e contribuições por `site_id`.
-- [ ] Adicionar trilha de auditoria das mudanças administrativas.
+- [x] Isolar configurações, presentes e contribuições por `site_id`.
+- [x] Adicionar trilha de auditoria das mudanças administrativas.
 
 ## Papéis
 
@@ -23,4 +23,8 @@ Esta fase inicia a transformação do site isolado em uma plataforma administrá
 | Administrador do evento | Conteúdo, identidade visual, presentes, Pix e acompanhamento do próprio evento |
 | Convidado | Consulta pública, escolha de presentes e declaração de contribuição |
 
-O primeiro incremento cria as tabelas `platform_users`, `event_sites` e `site_memberships` somente na homologação. As tabelas atuais do evento permanecem inalteradas até que a estratégia de isolamento por site esteja validada.
+O primeiro incremento criou as tabelas `platform_users`, `event_sites`, `site_memberships`, `site_invitations` e `audit_logs` somente na homologação. As configurações, o cache do catálogo, os presentes reservados e as contribuições Pix agora são delimitados por `site_id`; o mesmo item pode existir em eventos diferentes sem colisão.
+
+## Conclusão
+
+A Fase 1 foi concluída em homologação em 15 de setembro de 2026. A validação aplica todas as migrações sobre um banco vazio, comprova a separação de registros entre dois sites e verifica que mudanças administrativas relevantes geram eventos de auditoria. A produção e o domínio `cha.evametodo.com.br` permanecem sem alterações.

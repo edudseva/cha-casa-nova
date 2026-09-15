@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { requirePlatformOwnerApi } from "@/lib/platform-access";
+import { createAuditStatement } from "@/lib/audit-log";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{1,46}[a-z0-9])$/;
@@ -94,6 +95,14 @@ export async function POST(request: Request) {
       VALUES (?, ?, 'editor', 'pending', ?, datetime('now', '+7 days'), CURRENT_TIMESTAMP)`)
       .bind(siteId, ownerEmail, storedUser.id));
   }
+  statements.push(createAuditStatement({
+    siteId,
+    actor: auth.user,
+    action: "site.created",
+    entityType: "site",
+    entityId: siteId,
+    metadata: { slug, eventType, invitedAdmin: Boolean(ownerEmail && ownerEmail !== normalizedUserEmail) },
+  }));
 
   try {
     await env.DB.batch(statements);

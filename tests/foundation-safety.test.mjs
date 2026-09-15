@@ -139,3 +139,12 @@ test("cadastro de sites é restrito, validado e nasce somente em homologação",
   assert.match(form, /Criar estrutura em homologação/);
   assert.doesNotMatch(form, /cha\.evametodo\.com\.br/);
 });
+
+test("dados do evento têm chave de isolamento e auditoria administrativa", () => {
+  const schema = read("db/schema.ts");
+  for (const table of ["reservations", "contributions", "catalogCache", "siteConfig", "pixConfig"]) {
+    assert.match(schema, new RegExp(`export const ${table}[\\s\\S]*?siteId: text\\("site_id"\\)`));
+  }
+  assert.match(schema, /idx_reservations_site_gift/);
+  assert.match(schema, /sqliteTable\("audit_logs"/);
+});

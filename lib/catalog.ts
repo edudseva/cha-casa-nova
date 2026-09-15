@@ -1,9 +1,8 @@
 import { env } from "cloudflare:workers";
 import localGifts from "@/data/gifts.json";
 import { loadSiteConfig } from "@/lib/runtime-config";
+import { CURRENT_SITE_ID } from "@/lib/site-context";
 import type { Gift, GiftPriority } from "@/types/gift";
-
-const CACHE_ID = 1;
 
 const allowedRetailers = [
   "amazon.com.br", "a.co", "amzn.la", "fastshop.com.br", "mercadolivre.com.br",
@@ -184,7 +183,7 @@ export function giftsFromSheet(csv: string): Gift[] {
 
 async function cachedCatalog() {
   try {
-    const row = await env.DB.prepare("SELECT payload FROM catalog_cache WHERE id = ?").bind(CACHE_ID).first<{ payload: string }>();
+    const row = await env.DB.prepare("SELECT payload FROM catalog_cache WHERE site_id = ?").bind(CURRENT_SITE_ID).first<{ payload: string }>();
     if (!row?.payload) return null;
     const parsed = JSON.parse(row.payload) as Gift[];
     return Array.isArray(parsed) ? parsed : null;
@@ -199,8 +198,8 @@ export async function loadCatalog(): Promise<{ gifts: Gift[]; source: "google-sh
     const gifts = giftsFromSheet(await response.text());
     try {
       await env.DB.prepare(
-        "INSERT INTO catalog_cache (id, payload, synced_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(id) DO UPDATE SET payload = excluded.payload, synced_at = CURRENT_TIMESTAMP"
-      ).bind(CACHE_ID, JSON.stringify(gifts)).run();
+        "INSERT INTO catalog_cache (site_id, payload, synced_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(site_id) DO UPDATE SET payload = excluded.payload, synced_at = CURRENT_TIMESTAMP"
+      ).bind(CURRENT_SITE_ID, JSON.stringify(gifts)).run();
     } catch (error) { console.error("Could not persist catalog cache", error); }
     return { gifts, source: "google-sheets" };
   } catch (error) {

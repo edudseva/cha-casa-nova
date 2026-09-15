@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { loadCatalog } from "@/lib/catalog";
+import { CURRENT_SITE_ID } from "@/lib/site-context";
 
 type ReservationPayload = {
   giftId?: string;
@@ -20,8 +21,8 @@ function sameOrigin(request: Request) {
 export async function GET() {
   try {
     const result = await env.DB.prepare(
-      "SELECT gift_id, status FROM reservations WHERE status = ? ORDER BY created_at DESC"
-    ).bind("purchased").all<{ gift_id: string; status: string }>();
+      "SELECT gift_id, status FROM reservations WHERE site_id = ? AND status = ? ORDER BY created_at DESC"
+    ).bind(CURRENT_SITE_ID, "purchased").all<{ gift_id: string; status: string }>();
 
     return Response.json({
       reservations: result.results.map((row: { gift_id: string; status: string }) => ({
@@ -68,13 +69,13 @@ export async function POST(request: Request) {
     }
 
     const reopened = await env.DB.prepare(
-      "UPDATE reservations SET guest_name = ?, guest_contact = ?, delivery_choice = ?, order_reference = ?, message = ?, status = ?, created_at = CURRENT_TIMESTAMP WHERE gift_id = ? AND status != ?"
-    ).bind(guestName, guestContact, deliveryChoice, orderReference, message, "purchased", giftId, "purchased").run();
+      "UPDATE reservations SET guest_name = ?, guest_contact = ?, delivery_choice = ?, order_reference = ?, message = ?, status = ?, created_at = CURRENT_TIMESTAMP WHERE site_id = ? AND gift_id = ? AND status != ?"
+    ).bind(guestName, guestContact, deliveryChoice, orderReference, message, "purchased", CURRENT_SITE_ID, giftId, "purchased").run();
 
     if (!reopened.meta.changes) {
       await env.DB.prepare(
-        "INSERT INTO reservations (gift_id, guest_name, guest_contact, delivery_choice, order_reference, message, status) VALUES (?, ?, ?, ?, ?, ?, ?)"
-      ).bind(giftId, guestName, guestContact, deliveryChoice, orderReference, message, "purchased").run();
+        "INSERT INTO reservations (site_id, gift_id, guest_name, guest_contact, delivery_choice, order_reference, message, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+      ).bind(CURRENT_SITE_ID, giftId, guestName, guestContact, deliveryChoice, orderReference, message, "purchased").run();
     }
 
     return Response.json({ ok: true }, { status: 201 });

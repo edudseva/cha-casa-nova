@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { requirePlatformOwnerApi } from "@/lib/platform-access";
 import { CURRENT_SITE_ID } from "@/lib/platform-workspace";
+import { createAuditStatement } from "@/lib/audit-log";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const INVITABLE_ROLES = new Set(["editor"]);
@@ -57,13 +58,16 @@ export async function POST(request: Request) {
     .bind(CURRENT_SITE_ID, email).first();
   if (member) return Response.json({ error: "Essa pessoa já possui acesso ao evento." }, { status: 409 });
 
-  await env.DB.prepare(`INSERT INTO site_invitations
-    (site_id, email, role, status, invited_by, expires_at, updated_at)
-    VALUES (?, ?, ?, 'pending', ?, datetime('now', '+7 days'), CURRENT_TIMESTAMP)
-    ON CONFLICT(site_id, email) DO UPDATE SET role = excluded.role, status = 'pending',
-      invited_by = excluded.invited_by, expires_at = excluded.expires_at,
-      accepted_by = NULL, accepted_at = NULL, updated_at = CURRENT_TIMESTAMP`)
-    .bind(CURRENT_SITE_ID, email, role, auth.user.id).run();
+  await env.DB.batch([
+    env.DB.prepare(`INSERT INTO site_invitations
+      (site_id, email, role, status, invited_by, expires_at, updated_at)
+      VALUES (?, ?, ?, 'pending', ?, datetime('now', '+7 days'), CURRENT_TIMESTAMP)
+      ON CONFLICT(site_id, email) DO UPDATE SET role = excluded.role, status = 'pending',
+        invited_by = excluded.invited_by, expires_at = excluded.expires_at,
+        accepted_by = NULL, accepted_at = NULL, updated_at = CURRENT_TIMESTAMP`)
+      .bind(CURRENT_SITE_ID, email, role, auth.user.id),
+    createAuditStatement({ siteId: CURRENT_SITE_ID, actor: auth.user, action: "invitation.created", entityType: "invitation", entityId: email, metadata: { role } }),
+  ]);
 
   return Response.json({ ok: true, ...(await accessSnapshot()) }, { status: 201 });
 }
@@ -90,5 +94,12 @@ export async function PATCH(request: Request) {
         WHERE id = ? AND site_id = ? AND status != 'accepted'`).bind(id, CURRENT_SITE_ID).run();
 
   if (!result.meta.changes) return Response.json({ error: "Convite não encontrado ou já concluído." }, { status: 409 });
+  await createAuditStatement({
+    siteId: CURRENT_SITE_ID,
+    actor: auth.user,
+    action: body.action === "cancel" ? "invitation.cancelled" : "invitation.resent",
+    entityType: "invitation",
+    entityId: id,
+  }).run();
   return Response.json({ ok: true, ...(await accessSnapshot()) });
 }

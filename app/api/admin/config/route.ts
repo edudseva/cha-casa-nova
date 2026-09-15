@@ -6,6 +6,9 @@ import {
   saveSiteConfig,
 } from "@/lib/runtime-config";
 import type { SiteConfig } from "@/types/gift";
+import { createAuditStatement } from "@/lib/audit-log";
+import { CURRENT_SITE_ID } from "@/lib/site-context";
+import { env } from "cloudflare:workers";
 
 function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
@@ -69,6 +72,14 @@ export async function PATCH(request: Request) {
                 saveSiteConfig(body.config ?? {}),
                 savePixConfig(body.pix ?? {}),
               ]);
+              await createAuditStatement({
+                siteId: CURRENT_SITE_ID,
+                actor: auth.user,
+                action: "site.configuration_updated",
+                entityType: "site",
+                entityId: CURRENT_SITE_ID,
+                metadata: { configuration: Boolean(body.config), pix: Boolean(body.pix) },
+              }).run();
 
               return Response.json({ ok: true, config, pix });
             } catch (error) {

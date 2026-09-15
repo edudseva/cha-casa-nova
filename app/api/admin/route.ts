@@ -1,6 +1,8 @@
 import { env } from "cloudflare:workers";
 import { requireAdminApi } from "@/lib/admin-auth";
 import { loadCatalog } from "@/lib/catalog";
+import { createAuditStatement } from "@/lib/audit-log";
+import { CURRENT_SITE_ID } from "@/lib/site-context";
 
 function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
@@ -12,8 +14,8 @@ export async function GET() {
   if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.status });
 
   const [reservations, contributions] = await env.DB.batch([
-    env.DB.prepare("SELECT id, gift_id, guest_name, guest_contact, delivery_choice, order_reference, message, status, created_at FROM reservations ORDER BY created_at DESC"),
-    env.DB.prepare("SELECT id, guest_name, guest_contact, amount_cents, transaction_reference, message, payment_status, created_at FROM contributions ORDER BY created_at DESC"),
+    env.DB.prepare("SELECT id, gift_id, guest_name, guest_contact, delivery_choice, order_reference, message, status, created_at FROM reservations WHERE site_id = ? ORDER BY created_at DESC").bind(CURRENT_SITE_ID),
+    env.DB.prepare("SELECT id, guest_name, guest_contact, amount_cents, transaction_reference, message, payment_status, created_at FROM contributions WHERE site_id = ? ORDER BY created_at DESC").bind(CURRENT_SITE_ID),
   ]);
 
   const catalog = await loadCatalog();
@@ -35,11 +37,21 @@ export async function PATCH(request: Request) {
   if (!Number.isInteger(id) || id < 1) return Response.json({ error: "Registro inválido." }, { status: 400 });
 
   if (body.kind === "reservation" && ["purchased", "cancelled"].includes(body.status ?? "")) {
-    await env.DB.prepare("UPDATE reservations SET status = ? WHERE id = ?").bind(body.status, id).run();
+    const current = await env.DB.prepare("SELECT status FROM reservations WHERE id = ? AND site_id = ?").bind(id, CURRENT_SITE_ID).first<{ status: string }>();
+    if (!current) return Response.json({ error: "Registro não encontrado." }, { status: 404 });
+    await env.DB.batch([
+      env.DB.prepare("UPDATE reservations SET status = ? WHERE id = ? AND site_id = ?").bind(body.status, id, CURRENT_SITE_ID),
+      createAuditStatement({ siteId: CURRENT_SITE_ID, actor: auth.user, action: "reservation.status_updated", entityType: "reservation", entityId: id, metadata: { from: current.status, to: body.status } }),
+    ]);
     return Response.json({ ok: true });
   }
   if (body.kind === "contribution" && ["declared", "confirmed", "rejected"].includes(body.status ?? "")) {
-    await env.DB.prepare("UPDATE contributions SET payment_status = ? WHERE id = ?").bind(body.status, id).run();
+    const current = await env.DB.prepare("SELECT payment_status FROM contributions WHERE id = ? AND site_id = ?").bind(id, CURRENT_SITE_ID).first<{ payment_status: string }>();
+    if (!current) return Response.json({ error: "Registro não encontrado." }, { status: 404 });
+    await env.DB.batch([
+      env.DB.prepare("UPDATE contributions SET payment_status = ? WHERE id = ? AND site_id = ?").bind(body.status, id, CURRENT_SITE_ID),
+      createAuditStatement({ siteId: CURRENT_SITE_ID, actor: auth.user, action: "contribution.status_updated", entityType: "contribution", entityId: id, metadata: { from: current.payment_status, to: body.status } }),
+    ]);
     return Response.json({ ok: true });
   }
   return Response.json({ error: "Atualização inválida." }, { status: 400 });

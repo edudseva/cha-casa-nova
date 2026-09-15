@@ -14,6 +14,7 @@ const catalog = await loadSource('../lib/catalog.ts', [
   [/import \{ env \} from "cloudflare:workers";/, 'const env = { DB: { prepare() { throw new Error("database offline"); } } };'],
   [/import localGifts from "@\/data\/gifts.json";/, `const localGifts = ${JSON.stringify(local)};`],
   [/import \{ loadSiteConfig \} from "@\/lib\/runtime-config";/, `const loadSiteConfig = async () => (${JSON.stringify(siteConfig)});`],
+  [/import \{ CURRENT_SITE_ID \} from "@\/lib\/site-context";/, 'const CURRENT_SITE_ID = "cha-casa-nova-homologacao";'],
 ]);
 
 test('only current sheet rows appear, including an intentionally empty catalogue', () => {

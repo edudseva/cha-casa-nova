@@ -1,7 +1,8 @@
 import { env } from "cloudflare:workers";
 import type { ChatGPTUser } from "@/app/chatgpt-auth";
+import { CURRENT_SITE_ID } from "@/lib/site-context";
 
-export const CURRENT_SITE_ID = "cha-casa-nova-homologacao";
+export { CURRENT_SITE_ID } from "@/lib/site-context";
 
 export type PlatformMember = {
   id: string;
@@ -33,6 +34,15 @@ export type PlatformSite = {
   createdAt: string;
 };
 
+export type PlatformAuditEntry = {
+  id: number;
+  actorEmail: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  createdAt: string;
+};
+
 export async function loadPlatformWorkspace(user: ChatGPTUser, siteName: string, coupleNames: string) {
   await env.DB.batch([
     env.DB.prepare(`INSERT INTO platform_users (id, email, display_name, platform_role, updated_at)
@@ -50,11 +60,11 @@ export async function loadPlatformWorkspace(user: ChatGPTUser, siteName: string,
       ON CONFLICT(site_id, user_id) DO UPDATE SET role = 'owner', status = 'active'`).bind(CURRENT_SITE_ID, user.id),
   ]);
 
-  const [sites, members, reservations, contributions, memberRows, invitationRows, siteRows] = await env.DB.batch([
+  const [sites, members, reservations, contributions, memberRows, invitationRows, siteRows, auditRows] = await env.DB.batch([
     env.DB.prepare("SELECT COUNT(*) AS total FROM event_sites WHERE status != 'archived'"),
     env.DB.prepare("SELECT COUNT(*) AS total FROM site_memberships WHERE status = 'active'"),
-    env.DB.prepare("SELECT COUNT(*) AS total FROM reservations WHERE status = 'purchased'"),
-    env.DB.prepare("SELECT COUNT(*) AS total FROM contributions WHERE payment_status = 'confirmed'"),
+    env.DB.prepare("SELECT COUNT(*) AS total FROM reservations WHERE site_id = ? AND status = 'purchased'").bind(CURRENT_SITE_ID),
+    env.DB.prepare("SELECT COUNT(*) AS total FROM contributions WHERE site_id = ? AND payment_status = 'confirmed'").bind(CURRENT_SITE_ID),
     env.DB.prepare(`SELECT u.id, u.email, u.display_name, m.role, m.status
       FROM site_memberships m
       INNER JOIN platform_users u ON u.id = m.user_id
@@ -71,6 +81,8 @@ export async function loadPlatformWorkspace(user: ChatGPTUser, siteName: string,
       FROM event_sites
       WHERE status != 'archived'
       ORDER BY CASE status WHEN 'active' THEN 0 ELSE 1 END, created_at DESC`),
+    env.DB.prepare(`SELECT id, actor_email, action, entity_type, entity_id, created_at
+      FROM audit_logs WHERE site_id = ? ORDER BY created_at DESC, id DESC LIMIT 12`).bind(CURRENT_SITE_ID),
   ]);
 
   const total = (result: D1Result<unknown>) => Number((result.results[0] as { total?: number } | undefined)?.total ?? 0);
@@ -107,5 +119,13 @@ export async function loadPlatformWorkspace(user: ChatGPTUser, siteName: string,
       environment: String(row.environment),
       createdAt: String(row.created_at),
     })) satisfies PlatformSite[],
+    auditRows: auditRows.results.map((row) => ({
+      id: Number(row.id),
+      actorEmail: String(row.actor_email),
+      action: String(row.action),
+      entityType: String(row.entity_type),
+      entityId: String(row.entity_id),
+      createdAt: String(row.created_at),
+    })) satisfies PlatformAuditEntry[],
   };
 }

@@ -3,7 +3,8 @@ import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqli
 
 export const reservations = sqliteTable("reservations", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  giftId: text("gift_id").notNull().unique(),
+  siteId: text("site_id").notNull().default("cha-casa-nova-homologacao"),
+  giftId: text("gift_id").notNull(),
   guestName: text("guest_name").notNull(),
   guestContact: text("guest_contact").notNull().default(""),
   deliveryChoice: text("delivery_choice").notNull().default(""),
@@ -11,10 +12,14 @@ export const reservations = sqliteTable("reservations", {
   message: text("message").notNull().default(""),
   status: text("status").notNull().default("purchased"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
-});
+}, (table) => [
+  uniqueIndex("idx_reservations_site_gift").on(table.siteId, table.giftId),
+  index("idx_reservations_site_status").on(table.siteId, table.status),
+]);
 
 export const contributions = sqliteTable("contributions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  siteId: text("site_id").notNull().default("cha-casa-nova-homologacao"),
   guestName: text("guest_name").notNull(),
   guestContact: text("guest_contact").notNull().default(""),
   amountCents: integer("amount_cents").notNull(),
@@ -22,28 +27,33 @@ export const contributions = sqliteTable("contributions", {
   message: text("message").notNull().default(""),
   paymentStatus: text("payment_status").notNull().default("declared"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
-});
+}, (table) => [
+  index("idx_contributions_site_status").on(table.siteId, table.paymentStatus, table.createdAt),
+]);
 
 export const catalogCache = sqliteTable("catalog_cache", {
   id: integer("id").primaryKey(),
+  siteId: text("site_id").notNull().default("cha-casa-nova-homologacao"),
   payload: text("payload").notNull(),
   syncedAt: text("synced_at").notNull().default(sql`CURRENT_TIMESTAMP`),
-});
+}, (table) => [uniqueIndex("idx_catalog_cache_site").on(table.siteId)]);
 
 export const siteConfig = sqliteTable("site_config", {
   id: integer("id").primaryKey(),
+  siteId: text("site_id").notNull().default("cha-casa-nova-homologacao"),
   payload: text("payload").notNull(),
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
-});
+}, (table) => [uniqueIndex("idx_site_config_site").on(table.siteId)]);
 
 export const pixConfig = sqliteTable("pix_config", {
   id: integer("id").primaryKey(),
+  siteId: text("site_id").notNull().default("cha-casa-nova-homologacao"),
   pixKey: text("pix_key").notNull(),
   receiver: text("receiver").notNull(),
   city: text("city").notNull(),
   enabled: integer("enabled").notNull().default(1),
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
-});
+}, (table) => [uniqueIndex("idx_pix_config_site").on(table.siteId)]);
 
 export const platformUsers = sqliteTable("platform_users", {
   id: text("id").primaryKey(),
@@ -95,4 +105,19 @@ export const siteInvitations = sqliteTable("site_invitations", {
 }, (table) => [
   uniqueIndex("idx_site_invitations_site_email").on(table.siteId, table.email),
   index("idx_site_invitations_site_status").on(table.siteId, table.status),
+]);
+
+export const auditLogs = sqliteTable("audit_logs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  siteId: text("site_id").notNull(),
+  actorUserId: text("actor_user_id").notNull(),
+  actorEmail: text("actor_email").notNull(),
+  action: text("action").notNull(),
+  entityType: text("entity_type").notNull(),
+  entityId: text("entity_id").notNull().default(""),
+  metadata: text("metadata").notNull().default("{}"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  index("idx_audit_logs_site_created").on(table.siteId, table.createdAt),
+  index("idx_audit_logs_actor_created").on(table.actorUserId, table.createdAt),
 ]);

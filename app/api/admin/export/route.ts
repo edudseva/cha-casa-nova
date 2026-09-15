@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { requireAdminApi } from "@/lib/admin-auth";
+import { CURRENT_SITE_ID } from "@/lib/site-context";
 
 function csvCell(value: unknown) {
   const text = String(value ?? "");
@@ -12,9 +13,9 @@ export async function GET(request: Request) {
   const type = new URL(request.url).searchParams.get("type");
   const isPix = type === "pix";
   const query = isPix
-    ? "SELECT id, guest_name, guest_contact, amount_cents, transaction_reference, message, payment_status, created_at FROM contributions ORDER BY created_at DESC"
-    : "SELECT id, gift_id, guest_name, guest_contact, delivery_choice, order_reference, message, status, created_at FROM reservations ORDER BY created_at DESC";
-  const result = await env.DB.prepare(query).all<Record<string, unknown>>();
+    ? "SELECT id, guest_name, guest_contact, amount_cents, transaction_reference, message, payment_status, created_at FROM contributions WHERE site_id = ? ORDER BY created_at DESC"
+    : "SELECT id, gift_id, guest_name, guest_contact, delivery_choice, order_reference, message, status, created_at FROM reservations WHERE site_id = ? ORDER BY created_at DESC";
+  const result = await env.DB.prepare(query).bind(CURRENT_SITE_ID).all<Record<string, unknown>>();
   const rows = result.results;
   const headers = rows.length ? Object.keys(rows[0]) : (isPix
     ? ["id", "guest_name", "guest_contact", "amount_cents", "transaction_reference", "message", "payment_status", "created_at"]

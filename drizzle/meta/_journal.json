@@ -50,6 +50,13 @@
       "when": 1789495330957,
       "tag": "0006_graceful_cerise",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1789496625827,
+      "tag": "0007_clever_calypso",
+      "breakpoints": true
     }
   ]
 }

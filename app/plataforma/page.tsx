@@ -1,11 +1,21 @@
 import Link from "next/link";
-import { Building2, CheckCircle2, ExternalLink, Home, Palette, ShieldCheck, Users } from "lucide-react";
+import { Building2, CheckCircle2, Clock3, ExternalLink, Home, Palette, ShieldCheck, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { requirePlatformOwnerPage } from "@/lib/platform-access";
 import { loadPlatformWorkspace } from "@/lib/platform-workspace";
 import { loadPixAdminConfig, loadSiteConfig } from "@/lib/runtime-config";
 import { PlatformMembers } from "./platform-members";
 import { PlatformSites } from "./platform-sites";
+
+const auditLabels: Record<string, string> = {
+  "site.created": "Site criado",
+  "site.configuration_updated": "Configurações atualizadas",
+  "reservation.status_updated": "Status de presente atualizado",
+  "contribution.status_updated": "Status de contribuição atualizado",
+  "invitation.created": "Convite criado",
+  "invitation.cancelled": "Convite cancelado",
+  "invitation.resent": "Convite reenviado",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -62,6 +72,20 @@ export default async function PlatformPage() {
         initialMembers={workspace.memberRows}
         initialInvitations={workspace.invitationRows}
       />
+
+      <section className="platform-role-card platform-audit-card">
+        <p className="eyebrow">Auditoria administrativa</p>
+        <h2>Alterações recentes</h2>
+        {workspace.auditRows.length ? workspace.auditRows.map((entry) => (
+          <div key={entry.id}>
+            <Clock3 />
+            <p>
+              <strong>{auditLabels[entry.action] ?? entry.action}</strong>
+              <span>{entry.actorEmail} · {new Date(`${entry.createdAt.replace(" ", "T")}Z`).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</span>
+            </p>
+          </div>
+        )) : <p>Nenhuma alteração administrativa registrada ainda.</p>}
+      </section>
     </section>
   </main>;
 }
