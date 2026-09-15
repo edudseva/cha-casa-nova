@@ -24,7 +24,7 @@ test("segredos locais e backups permanecem fora do Git", () => {
 test("baseline do esquema atual permanece documentada e versionada", () => {
   const schema = read("db/schema.ts");
   const baseline = read("docs/plataforma/schema-producao-baseline.md");
-  for (const table of ["reservations", "contributions", "catalog_cache"]) {
+  for (const table of ["reservations", "contributions", "catalog_cache", "site_config", "pix_config"]) {
     assert.match(schema, new RegExp(`sqliteTable\\("${table}"`));
     assert.match(baseline, new RegExp("Tabela `" + table + "`"));
   }
@@ -32,6 +32,7 @@ test("baseline do esquema atual permanece documentada e versionada", () => {
     "drizzle/0000_old_ser_duncan.sql",
     "drizzle/0001_lean_tony_stark.sql",
     "drizzle/0002_ambitious_paper_doll.sql",
+    "drizzle/0003_foundation_runtime_config.sql",
   ]) {
     assert.equal(existsSync(new URL(migration, root)), true, `${migration} ausente`);
   }
