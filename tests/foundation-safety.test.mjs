@@ -103,8 +103,27 @@ test("proprietário da plataforma e administrador do evento têm autorizações 
 
 test("primeira fundação multi-site é aditiva", () => {
   const schema = read("db/schema.ts");
-  for (const table of ["platform_users", "event_sites", "site_memberships"]) {
+  for (const table of ["platform_users", "event_sites", "site_memberships", "site_invitations"]) {
     assert.match(schema, new RegExp(`sqliteTable\\("${table}"`));
   }
   assert.match(schema, /idx_site_memberships_site_user/);
+  assert.match(schema, /idx_site_invitations_site_email/);
+});
+
+test("convites são protegidos e ativam acesso somente para o e-mail autenticado", () => {
+  const route = read("app/api/plataforma/membros/route.ts");
+  const adminAuth = read("lib/admin-auth.ts");
+  assert.match(route, /requirePlatformOwnerApi/);
+  assert.match(route, /sameOrigin/);
+  assert.match(route, /status = 'pending'/);
+  assert.match(adminAuth, /lower\(email\) = \?/);
+  assert.match(adminAuth, /expires_at >= CURRENT_TIMESTAMP/);
+});
+
+test("plano mestre termina com uma fase formal de segurança", () => {
+  const plan = read("docs/plataforma/plano-mestre.md");
+  assert.match(plan, /Fase 8 — Segurança, conformidade e prontidão final/);
+  for (const term of ["OWASP", "isolamento entre sites", "LGPD", "restauração", "incidentes"]) {
+    assert.match(plan, new RegExp(term, "i"));
+  }
 });

@@ -1,7 +1,24 @@
 import { env } from "cloudflare:workers";
 import type { ChatGPTUser } from "@/app/chatgpt-auth";
 
-const CURRENT_SITE_ID = "cha-casa-nova-homologacao";
+export const CURRENT_SITE_ID = "cha-casa-nova-homologacao";
+
+export type PlatformMember = {
+  id: string;
+  email: string;
+  displayName: string;
+  role: string;
+  status: string;
+};
+
+export type PlatformInvitation = {
+  id: number;
+  email: string;
+  role: string;
+  status: string;
+  expiresAt: string;
+  createdAt: string;
+};
 
 export async function loadPlatformWorkspace(user: ChatGPTUser, siteName: string) {
   await env.DB.batch([
@@ -17,11 +34,22 @@ export async function loadPlatformWorkspace(user: ChatGPTUser, siteName: string)
       ON CONFLICT(site_id, user_id) DO UPDATE SET role = 'owner', status = 'active'`).bind(CURRENT_SITE_ID, user.id),
   ]);
 
-  const [sites, members, reservations, contributions] = await env.DB.batch([
+  const [sites, members, reservations, contributions, memberRows, invitationRows] = await env.DB.batch([
     env.DB.prepare("SELECT COUNT(*) AS total FROM event_sites WHERE status != 'archived'"),
     env.DB.prepare("SELECT COUNT(*) AS total FROM site_memberships WHERE status = 'active'"),
     env.DB.prepare("SELECT COUNT(*) AS total FROM reservations WHERE status = 'purchased'"),
     env.DB.prepare("SELECT COUNT(*) AS total FROM contributions WHERE payment_status = 'confirmed'"),
+    env.DB.prepare(`SELECT u.id, u.email, u.display_name, m.role, m.status
+      FROM site_memberships m
+      INNER JOIN platform_users u ON u.id = m.user_id
+      WHERE m.site_id = ?
+      ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'editor' THEN 1 ELSE 2 END, u.display_name`).bind(CURRENT_SITE_ID),
+    env.DB.prepare(`SELECT id, email, role,
+      CASE WHEN status = 'pending' AND expires_at < CURRENT_TIMESTAMP THEN 'expired' ELSE status END AS status,
+      expires_at, created_at
+      FROM site_invitations
+      WHERE site_id = ?
+      ORDER BY created_at DESC`).bind(CURRENT_SITE_ID),
   ]);
 
   const total = (result: D1Result<unknown>) => Number((result.results[0] as { total?: number } | undefined)?.total ?? 0);
@@ -31,5 +59,20 @@ export async function loadPlatformWorkspace(user: ChatGPTUser, siteName: string)
     members: total(members),
     confirmedGifts: total(reservations),
     confirmedPix: total(contributions),
+    memberRows: memberRows.results.map((row) => ({
+      id: String(row.id),
+      email: String(row.email),
+      displayName: String(row.display_name || row.email),
+      role: String(row.role),
+      status: String(row.status),
+    })) satisfies PlatformMember[],
+    invitationRows: invitationRows.results.map((row) => ({
+      id: Number(row.id),
+      email: String(row.email),
+      role: String(row.role),
+      status: String(row.status),
+      expiresAt: String(row.expires_at),
+      createdAt: String(row.created_at),
+    })) satisfies PlatformInvitation[],
   };
 }

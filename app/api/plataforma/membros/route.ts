@@ -1,0 +1,94 @@
+import { env } from "cloudflare:workers";
+import { requirePlatformOwnerApi } from "@/lib/platform-access";
+import { CURRENT_SITE_ID } from "@/lib/platform-workspace";
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const INVITABLE_ROLES = new Set(["editor"]);
+
+function sameOrigin(request: Request) {
+  const origin = request.headers.get("origin");
+  return !origin || new URL(origin).host === new URL(request.url).host;
+}
+
+async function accessSnapshot() {
+  const [members, invitations] = await env.DB.batch([
+    env.DB.prepare(`SELECT u.id, u.email, u.display_name, m.role, m.status
+      FROM site_memberships m
+      INNER JOIN platform_users u ON u.id = m.user_id
+      WHERE m.site_id = ?
+      ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'editor' THEN 1 ELSE 2 END, u.display_name`).bind(CURRENT_SITE_ID),
+    env.DB.prepare(`SELECT id, email, role,
+      CASE WHEN status = 'pending' AND expires_at < CURRENT_TIMESTAMP THEN 'expired' ELSE status END AS status,
+      expires_at, created_at
+      FROM site_invitations
+      WHERE site_id = ?
+      ORDER BY created_at DESC`).bind(CURRENT_SITE_ID),
+  ]);
+  return { members: members.results, invitations: invitations.results };
+}
+
+export async function GET() {
+  const auth = await requirePlatformOwnerApi();
+  if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.status });
+  return Response.json(await accessSnapshot(), { headers: { "cache-control": "no-store" } });
+}
+
+export async function POST(request: Request) {
+  if (!sameOrigin(request)) return Response.json({ error: "Origem inválida." }, { status: 403 });
+  const auth = await requirePlatformOwnerApi();
+  if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.status });
+  if (Number(request.headers.get("content-length") ?? 0) > 4_000) {
+    return Response.json({ error: "Dados enviados em excesso." }, { status: 413 });
+  }
+
+  const body = await request.json().catch(() => null) as { email?: string; role?: string } | null;
+  const email = body?.email?.trim().toLowerCase() ?? "";
+  const role = body?.role ?? "";
+  if (email.length > 254 || !EMAIL_PATTERN.test(email)) {
+    return Response.json({ error: "Informe um e-mail válido." }, { status: 400 });
+  }
+  if (!INVITABLE_ROLES.has(role)) {
+    return Response.json({ error: "Selecione uma permissão válida." }, { status: 400 });
+  }
+
+  const member = await env.DB.prepare(`SELECT m.id FROM site_memberships m
+    INNER JOIN platform_users u ON u.id = m.user_id
+    WHERE m.site_id = ? AND lower(u.email) = ? AND m.status = 'active' LIMIT 1`)
+    .bind(CURRENT_SITE_ID, email).first();
+  if (member) return Response.json({ error: "Essa pessoa já possui acesso ao evento." }, { status: 409 });
+
+  await env.DB.prepare(`INSERT INTO site_invitations
+    (site_id, email, role, status, invited_by, expires_at, updated_at)
+    VALUES (?, ?, ?, 'pending', ?, datetime('now', '+7 days'), CURRENT_TIMESTAMP)
+    ON CONFLICT(site_id, email) DO UPDATE SET role = excluded.role, status = 'pending',
+      invited_by = excluded.invited_by, expires_at = excluded.expires_at,
+      accepted_by = NULL, accepted_at = NULL, updated_at = CURRENT_TIMESTAMP`)
+    .bind(CURRENT_SITE_ID, email, role, auth.user.id).run();
+
+  return Response.json({ ok: true, ...(await accessSnapshot()) }, { status: 201 });
+}
+
+export async function PATCH(request: Request) {
+  if (!sameOrigin(request)) return Response.json({ error: "Origem inválida." }, { status: 403 });
+  const auth = await requirePlatformOwnerApi();
+  if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.status });
+  if (Number(request.headers.get("content-length") ?? 0) > 2_000) {
+    return Response.json({ error: "Dados enviados em excesso." }, { status: 413 });
+  }
+
+  const body = await request.json().catch(() => null) as { id?: number; action?: string } | null;
+  const id = Number(body?.id);
+  if (!Number.isInteger(id) || id < 1 || !["cancel", "resend"].includes(body?.action ?? "")) {
+    return Response.json({ error: "Atualização inválida." }, { status: 400 });
+  }
+
+  const result = body?.action === "cancel"
+    ? await env.DB.prepare(`UPDATE site_invitations SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND site_id = ? AND status = 'pending'`).bind(id, CURRENT_SITE_ID).run()
+    : await env.DB.prepare(`UPDATE site_invitations SET status = 'pending', expires_at = datetime('now', '+7 days'),
+        accepted_by = NULL, accepted_at = NULL, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND site_id = ? AND status != 'accepted'`).bind(id, CURRENT_SITE_ID).run();
+
+  if (!result.meta.changes) return Response.json({ error: "Convite não encontrado ou já concluído." }, { status: 409 });
+  return Response.json({ ok: true, ...(await accessSnapshot()) });
+}

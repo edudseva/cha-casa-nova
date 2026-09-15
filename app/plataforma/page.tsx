@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { requirePlatformOwnerPage } from "@/lib/platform-access";
 import { loadPlatformWorkspace } from "@/lib/platform-workspace";
 import { loadPixAdminConfig, loadSiteConfig } from "@/lib/runtime-config";
+import { PlatformMembers } from "./platform-members";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +53,12 @@ export default async function PlatformPage() {
           <div><Users /><p><strong>Administradores do evento</strong><span>Gerenciam presentes, Pix, conteúdo e aparência do próprio site.</span></p></div>
         </aside>
       </div>
+
+      <PlatformMembers
+        siteId={workspace.siteId}
+        initialMembers={workspace.memberRows}
+        initialInvitations={workspace.invitationRows}
+      />
     </section>
   </main>;
 }
