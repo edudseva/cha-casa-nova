@@ -13,7 +13,7 @@ async function loadSource(path, replacements) {
 const catalog = await loadSource('../lib/catalog.ts', [
   [/import \{ env \} from "cloudflare:workers";/, 'const env = { DB: { prepare() { throw new Error("database offline"); } } };'],
   [/import localGifts from "@\/data\/gifts.json";/, `const localGifts = ${JSON.stringify(local)};`],
-  [/import \\{ loadSiteConfig \\} from "@\\/lib\\/runtime-config";/, "const loadSiteConfig = async () => siteConfig;"],
+  [/import \{ loadSiteConfig \} from "@\/lib\/runtime-config";/, "const loadSiteConfig = async () => siteConfig;"],
 ]);
 
 test('only current sheet rows appear, including an intentionally empty catalogue', () => {
