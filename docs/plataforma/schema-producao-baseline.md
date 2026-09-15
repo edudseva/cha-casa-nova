@@ -8,7 +8,7 @@ Registro estrutural sem dados, credenciais, IDs de banco ou segredos. A referên
 - ORM: Drizzle ORM.
 - Binding lógico da aplicação: `DB`.
 - Definição canônica: `db/schema.ts`.
-- Histórico versionado: `drizzle/0000_old_ser_duncan.sql` a `drizzle/0003_foundation_runtime_config.sql`.
+- Histórico versionado: `drizzle/0000_old_ser_duncan.sql` a `drizzle/0003_chubby_strong_guy.sql`.
 
 ## Tabela `reservations`
 
