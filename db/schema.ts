@@ -29,3 +29,18 @@ export const catalogCache = sqliteTable("catalog_cache", {
   payload: text("payload").notNull(),
   syncedAt: text("synced_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const siteConfig = sqliteTable("site_config", {
+  id: integer("id").primaryKey(),
+  payload: text("payload").notNull(),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const pixConfig = sqliteTable("pix_config", {
+  id: integer("id").primaryKey(),
+  pixKey: text("pix_key").notNull(),
+  receiver: text("receiver").notNull(),
+  city: text("city").notNull(),
+  enabled: integer("enabled").notNull().default(1),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
