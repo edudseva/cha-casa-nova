@@ -32,7 +32,7 @@ test("baseline do esquema atual permanece documentada e versionada", () => {
     "drizzle/0000_old_ser_duncan.sql",
     "drizzle/0001_lean_tony_stark.sql",
     "drizzle/0002_ambitious_paper_doll.sql",
-    "drizzle/0003_foundation_runtime_config.sql",
+    "drizzle/0003_chubby_strong_guy.sql",
   ]) {
     assert.equal(existsSync(new URL(migration, root)), true, `${migration} ausente`);
   }
