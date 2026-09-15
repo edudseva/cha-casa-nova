@@ -127,3 +127,15 @@ test("plano mestre termina com uma fase formal de segurança", () => {
     assert.match(plan, new RegExp(term, "i"));
   }
 });
+
+test("cadastro de sites é restrito, validado e nasce somente em homologação", () => {
+  const route = read("app/api/plataforma/sites/route.ts");
+  const form = read("app/plataforma/platform-sites.tsx");
+  assert.match(route, /requirePlatformOwnerApi/);
+  assert.match(route, /sameOrigin/);
+  assert.match(route, /'homologation'/);
+  assert.match(route, /'draft'/);
+  assert.match(route, /crypto\.randomUUID/);
+  assert.match(form, /Criar estrutura em homologação/);
+  assert.doesNotMatch(form, /cha\.evametodo\.com\.br/);
+});

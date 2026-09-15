@@ -11,7 +11,7 @@ Esta fase inicia a transformação do site isolado em uma plataforma administrá
 - [x] Criar a primeira versão da Central da Plataforma.
 - [x] Manter o painel atual do casal sem perda de funcionalidades.
 - [x] Criar convite e gestão de novos administradores.
-- [ ] Criar cadastro assistido de um novo site de evento.
+- [x] Criar cadastro assistido de um novo site de evento.
 - [ ] Isolar configurações, presentes e contribuições por `site_id`.
 - [ ] Adicionar trilha de auditoria das mudanças administrativas.
 

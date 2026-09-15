@@ -5,6 +5,7 @@ import { requirePlatformOwnerPage } from "@/lib/platform-access";
 import { loadPlatformWorkspace } from "@/lib/platform-workspace";
 import { loadPixAdminConfig, loadSiteConfig } from "@/lib/runtime-config";
 import { PlatformMembers } from "./platform-members";
+import { PlatformSites } from "./platform-sites";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ export default async function PlatformPage() {
   }
 
   const [config, pix] = await Promise.all([loadSiteConfig(), loadPixAdminConfig()]);
-  const workspace = await loadPlatformWorkspace(user, config.eventTitle);
+  const workspace = await loadPlatformWorkspace(user, config.eventTitle, config.coupleNames);
 
   return <main className="platform-page">
     <header className="admin-header">
@@ -27,11 +28,13 @@ export default async function PlatformPage() {
       <div className="platform-heading"><p className="eyebrow">Visão do proprietário</p><h1>Central da plataforma</h1><p>Administre os sites e mantenha separadas as configurações que pertencem à plataforma e ao casal.</p></div>
 
       <div className="platform-metrics">
-        <article><Building2 /><p><strong>{workspace.sites}</strong><span>site ativo</span></p></article>
-        <article><Users /><p><strong>{workspace.members}</strong><span>proprietário ativo</span></p></article>
+        <article><Building2 /><p><strong>{workspace.sites}</strong><span>sites cadastrados</span></p></article>
+        <article><Users /><p><strong>{workspace.members}</strong><span>vínculos ativos</span></p></article>
         <article><CheckCircle2 /><p><strong>{workspace.confirmedGifts}</strong><span>presentes confirmados</span></p></article>
         <article><CheckCircle2 /><p><strong>{workspace.confirmedPix}</strong><span>Pix confirmados</span></p></article>
       </div>
+
+      <PlatformSites initialSites={workspace.siteRows} />
 
       <div className="platform-grid">
         <article className="platform-site-card">
