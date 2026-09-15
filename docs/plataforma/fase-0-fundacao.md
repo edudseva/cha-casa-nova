@@ -54,6 +54,7 @@ Esta fase cria as salvaguardas para evoluir o site atual para uma plataforma mul
 - Binding `DB` associado a D1 exclusivo.
 - Tabelas confirmadas: `catalog_cache`, `contributions`, `pix_config`, `reservations` e `site_config`.
 - Variável de identificação: `APP_ENV=homologation`.
+- Conta proprietária incluída na lista administrativa da homologação; o endereço não é versionado no Git.
 - Segredos e chave Pix de produção: ausentes.
 
 ## Produção identificada sem alteração
