@@ -94,7 +94,7 @@ export function PlatformSites({ initialSites }: { initialSites: PlatformSite[] }
 
     <div className="platform-sites-summary"><span><Globe2 /> {sites.length} cadastrados</span><span><Settings2 /> {draftCount} em configuração</span></div>
     <div className="platform-sites-list">
-      {sites.map((site) => <article key={site.id}>
+      {sites.map((site) => <article key={site.id} className={`platform-site-row platform-site-${site.status}`}>
         <div className="platform-site-title"><div><strong>{site.name}</strong><span>{site.coupleNames || "Responsáveis ainda não informados"}</span></div><Badge variant={site.status === "active" ? "default" : "secondary"}>{site.status === "active" ? "Ativo" : "Rascunho"}</Badge></div>
         <dl><div><dt>Tipo</dt><dd>{eventLabels[site.eventType] ?? "Outro evento"}</dd></div><div><dt>Data</dt><dd>{site.eventDate ? new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(new Date(`${site.eventDate}T12:00:00Z`)) : "A definir"}</dd></div><div><dt>Identificador</dt><dd>{site.slug}</dd></div></dl>
         <footer><span><UsersRound /> Estrutura de acessos criada</span><span><CalendarDays /> {site.onboardingStatus === "started" ? "Configuração iniciada" : site.status === "active" ? "Configuração atual" : "Aguardando configuração"}</span>{site.status === "draft" && <span><Mail /> Ainda não publicado</span>}</footer>

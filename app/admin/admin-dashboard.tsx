@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Building2, Check, Download, Gift, Heart, Home, Palette, RefreshCw, RotateCcw } from "lucide-react";
+import { Building2, Check, CircleDollarSign, Download, Gift, Home, LayoutDashboard, Palette, RefreshCw, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -73,19 +73,22 @@ export function AdminDashboard({ displayName, showPlatformLink }: { displayName:
   return (
     <main className="admin-page">
       <header className="admin-header">
-        <Link className="brand" href="/"><span className="brand-mark"><Home size={18} /></span><span>Nosso cantinho</span></Link>
-        <div><span>Olá, {displayName}</span>{showPlatformLink && <Button asChild variant="outline"><Link href="/plataforma"><Building2 /> Plataforma</Link></Button>}<Button asChild variant="outline"><Link href="/admin/personalizacao"><Palette /> Personalização</Link></Button><Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw /> Atualizar</Button></div>
+        <Link className="brand" href="/"><span className="brand-mark"><Home size={18} /></span><span><small>Painel do evento</small>Nosso cantinho</span></Link>
+        <div><span className="admin-user">Olá, <strong>{displayName}</strong></span>{showPlatformLink && <Button asChild variant="outline"><Link href="/plataforma"><Building2 /> Plataforma</Link></Button>}<Button asChild variant="outline"><Link href="/admin/personalizacao"><Palette /> Personalização</Link></Button><Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw /> Atualizar</Button></div>
       </header>
       <section className="admin-shell">
-        <div className="admin-heading"><p className="eyebrow">Área privada</p><h1>Controle do chá</h1><p>Confira presentes e contribuições declaradas antes de considerar cada registro concluído.</p></div>
+        <div className="admin-heading-row">
+          <div className="admin-heading"><p className="eyebrow">Área privada</p><h1>Controle do chá</h1><p>Confira presentes e contribuições declaradas antes de considerar cada registro concluído.</p></div>
+          <span className="admin-context-pill"><LayoutDashboard /> Visão operacional</span>
+        </div>
         <div className="admin-summary">
-          <article><Gift /><strong>{summary.gifts}</strong><span>presentes confirmados</span></article>
-          <article><Heart /><strong>{summary.declaredPix}</strong><span>Pix aguardando conferência</span></article>
-          <article><Check /><strong>{money.format(summary.confirmedPix / 100)}</strong><span>Pix conferidos por vocês</span></article>
+          <article className="admin-metric admin-metric-gifts"><span className="admin-metric-icon"><Gift /></span><div><small>Presentes</small><strong>{summary.gifts}</strong><span>confirmados pelos convidados</span></div></article>
+          <article className="admin-metric admin-metric-pending"><span className="admin-metric-icon"><RefreshCw /></span><div><small>Requer atenção</small><strong>{summary.declaredPix}</strong><span>Pix aguardando conferência</span></div></article>
+          <article className="admin-metric admin-metric-total"><span className="admin-metric-icon"><CircleDollarSign /></span><div><small>Total conferido</small><strong>{money.format(summary.confirmedPix / 100)}</strong><span>em contribuições por Pix</span></div></article>
         </div>
 
         <Tabs defaultValue="presentes" className="admin-tabs">
-          <TabsList><TabsTrigger value="presentes">Presentes</TabsTrigger><TabsTrigger value="pix">Pix</TabsTrigger></TabsList>
+          <TabsList><TabsTrigger value="presentes"><Gift /> Presentes</TabsTrigger><TabsTrigger value="pix"><CircleDollarSign /> Pix</TabsTrigger></TabsList>
           <TabsContent value="presentes" className="admin-panel">
             <div className="admin-panel-heading"><div><h2>Presentes</h2><p>Desfaça uma confirmação somente quando ela tiver sido registrada por engano.</p></div><Button asChild variant="outline"><a href="/api/admin/export?type=presentes"><Download /> Exportar CSV</a></Button></div>
             <p className="admin-mobile-hint">Deslize a tabela para o lado para consultar todos os dados.</p>

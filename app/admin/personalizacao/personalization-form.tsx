@@ -2,7 +2,7 @@
 
 import { FormEvent, ReactNode, useState } from "react";
 import Link from "next/link";
-import { Home, Save, ShieldCheck } from "lucide-react";
+import { CalendarDays, Gift, Home, Images, Landmark, Link2, Save, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,20 +63,21 @@ export function PersonalizationForm({ initialConfig, initialPix }: { initialConf
 
   return <main className="admin-page">
     <header className="admin-header">
-      <Link className="brand" href="/"><span className="brand-mark"><Home size={18} /></span><span>{config.brandLabel}</span></Link>
+      <Link className="brand" href="/"><span className="brand-mark"><Home size={18} /></span><span><small>Painel do evento</small>{config.brandLabel}</span></Link>
       <Button asChild variant="outline"><Link href="/admin">Voltar ao painel</Link></Button>
     </header>
     <section className="admin-shell admin-config-shell">
-      <div className="admin-heading"><p className="eyebrow">Área privada</p><h1>Personalização</h1><p>Centralize aqui as informações do casal, o evento, a lista, o Pix, as páginas e a identidade visual.</p></div>
+      <div className="admin-heading-row"><div className="admin-heading"><p className="eyebrow">Configuração do evento</p><h1>Personalização</h1><p>Centralize aqui as informações do casal, o evento, a lista, o Pix, as páginas e a identidade visual.</p></div><span className="admin-context-pill"><Sparkles /> Identidade e conteúdo</span></div>
       <form onSubmit={submit} className="admin-config-form">
         <Tabs defaultValue="identidade" className="admin-config-tabs">
           <TabsList>
-            <TabsTrigger value="identidade">Identidade</TabsTrigger>
-            <TabsTrigger value="evento">Evento</TabsTrigger>
-            <TabsTrigger value="presentes">Presentes</TabsTrigger>
-            <TabsTrigger value="pix">Pix</TabsTrigger>
-            <TabsTrigger value="visual">Visual</TabsTrigger>
-            <TabsTrigger value="paginas">Páginas e links</TabsTrigger>
+            <span className="admin-config-nav-label">Seções</span>
+            <TabsTrigger value="identidade"><Sparkles /> Identidade</TabsTrigger>
+            <TabsTrigger value="evento"><CalendarDays /> Evento</TabsTrigger>
+            <TabsTrigger value="presentes"><Gift /> Presentes</TabsTrigger>
+            <TabsTrigger value="pix"><Landmark /> Pix</TabsTrigger>
+            <TabsTrigger value="visual"><Images /> Visual</TabsTrigger>
+            <TabsTrigger value="paginas"><Link2 /> Páginas e links</TabsTrigger>
           </TabsList>
 
           <TabsContent value="identidade" className="admin-config-panel">
