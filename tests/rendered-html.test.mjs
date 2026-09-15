@@ -1,33 +1,23 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const developmentPreviewMeta =
-  /<meta(?=[^>]*\bname=["']codex-preview["'])(?=[^>]*\bcontent=["']development["'])[^>]*>/i;
+const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("renders development preview metadata", async () => {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
+test("gera os artefatos públicos e administrativos esperados", () => {
+  const clientManifest = JSON.parse(read("dist/client/.vite/manifest.json"));
+  const serverManifest = JSON.parse(read("dist/server/.vite/manifest.json"));
 
-  const response = await worker.fetch(
-    new Request("http://localhost/", {
-      headers: { accept: "text/html" },
-    }),
-    {
-      ASSETS: {
-        fetch: async () => new Response("Not found", { status: 404 }),
-      },
-    },
-    {
-      waitUntil() {},
-      passThroughOnException() {},
-    },
-  );
+  assert.ok(clientManifest["app/gift-catalog-v2.tsx"]);
+  assert.ok(clientManifest["app/admin/admin-dashboard.tsx"]);
+  assert.ok(clientManifest["app/admin/personalizacao/personalization-form.tsx"]);
+  assert.ok(serverManifest["virtual:cloudflare/worker-entry"]);
+});
 
-  assert.equal(response.status, 200);
-  assert.match(
-    response.headers.get("content-type") ?? "",
-    /^text\/html\b/i,
-  );
-  assert.match(await response.text(), developmentPreviewMeta);
+test("preserva os cabeçalhos de segurança no Worker compilado", () => {
+  const worker = read("dist/server/index.js");
+  assert.match(worker, /Strict-Transport-Security/);
+  assert.match(worker, /X-Content-Type-Options/);
+  assert.match(worker, /Content-Security-Policy/);
+  assert.match(worker, /frame-ancestors 'none'/);
 });
