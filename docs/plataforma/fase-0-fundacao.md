@@ -39,13 +39,22 @@ Esta fase cria as salvaguardas para evoluir o site atual para uma plataforma mul
 - [x] Adicionar restauração limitada à homologação.
 - [x] Adicionar testes automáticos não destrutivos.
 - [x] Adicionar validação de CI sem permissões de escrita e sem deploy.
-- [ ] Criar o ambiente de homologação com URL própria.
-- [ ] Criar e vincular um D1 físico exclusivo à homologação.
-- [ ] Configurar variáveis e segredos exclusivos de homologação.
+- [x] Criar o ambiente de homologação com URL própria.
+- [x] Criar e vincular um D1 físico exclusivo à homologação.
+- [x] Configurar ambiente exclusivo com `APP_ENV=homologation`; nenhum segredo ou Pix real foi copiado.
 - [ ] Executar exportação real da produção e validar integridade do arquivo.
 - [ ] Restaurar a cópia exclusivamente no D1 de homologação.
 - [ ] Executar testes funcionais contra homologação.
-- [ ] Registrar o plano de retorno antes de qualquer migração futura.
+- [x] Registrar o plano de retorno antes de qualquer migração futura.
+
+## Homologação provisionada
+
+- URL privada: `https://cha-casa-nova-homologacao.eduardo280014.chatgpt.site`
+- Aplicação server-backed com Worker e APIs.
+- Binding `DB` associado a D1 exclusivo.
+- Tabelas confirmadas: `catalog_cache`, `contributions`, `pix_config`, `reservations` e `site_config`.
+- Variável de identificação: `APP_ENV=homologation`.
+- Segredos e chave Pix de produção: ausentes.
 
 ## Backup
 
