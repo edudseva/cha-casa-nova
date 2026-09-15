@@ -8,7 +8,7 @@ Registro estrutural sem dados, credenciais, IDs de banco ou segredos. A referên
 - ORM: Drizzle ORM.
 - Binding lógico da aplicação: `DB`.
 - Definição canônica: `db/schema.ts`.
-- Histórico versionado: `drizzle/0000_old_ser_duncan.sql` a `drizzle/0002_ambitious_paper_doll.sql`.
+- Histórico versionado: `drizzle/0000_old_ser_duncan.sql` a `drizzle/0003_foundation_runtime_config.sql`.
 
 ## Tabela `reservations`
 
@@ -46,6 +46,27 @@ Registro estrutural sem dados, credenciais, IDs de banco ou segredos. A referên
 | `id` | integer | chave primária |
 | `payload` | text | obrigatório |
 | `synced_at` | text | obrigatório, padrão `CURRENT_TIMESTAMP` |
+
+## Tabela `site_config`
+
+| Coluna | Tipo | Restrições/padrão |
+| --- | --- | --- |
+| `id` | integer | chave primária |
+| `payload` | text | obrigatório |
+| `updated_at` | text | obrigatório, padrão `CURRENT_TIMESTAMP` |
+
+## Tabela `pix_config`
+
+| Coluna | Tipo | Restrições/padrão |
+| --- | --- | --- |
+| `id` | integer | chave primária |
+| `pix_key` | text | obrigatório; dado sensível, somente no servidor |
+| `receiver` | text | obrigatório |
+| `city` | text | obrigatório |
+| `enabled` | integer | obrigatório, padrão `1` |
+| `updated_at` | text | obrigatório, padrão `CURRENT_TIMESTAMP` |
+
+Essas duas tabelas já eram criadas sob demanda por `lib/runtime-config.ts`. A migração `0003` apenas registra a estrutura de forma idempotente com `CREATE TABLE IF NOT EXISTS`; ela não foi executada em produção nesta fase.
 
 ## Regra para próximas migrações
 
