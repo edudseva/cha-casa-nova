@@ -1,0 +1,39 @@
+name: Fase 0 - validacao segura
+
+on:
+  push:
+    branches:
+      - "plataforma/**"
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fase-0-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Baixar codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Validar protecoes da fundacao
+        run: npm run test:foundation
+
+      - name: Executar regressao completa
+        run: npm test
