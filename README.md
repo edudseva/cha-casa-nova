@@ -91,3 +91,13 @@ The timeout defaults can be overridden for a controlled canary with `SITES_INSTA
 
 - [vinext Documentation](https://github.com/cloudflare/vinext)
 - [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+
+## Plataforma — Fase 0
+
+A evolução multiusuário está isolada da produção na branch `plataforma/fase-0-fundacao`. As regras de separação de ambientes, baseline do D1, backup, restauração e critérios de conclusão estão em [`docs/plataforma/fase-0-fundacao.md`](docs/plataforma/fase-0-fundacao.md).
+
+Comandos de segurança:
+
+- `npm run test:foundation`: valida as salvaguardas sem acessar serviços externos.
+- `npm run db:backup -- --database NOME --output backups/arquivo.sql`: exporta um D1 remoto sem sobrescrever arquivos.
+- `npm run db:restore:homologation -- --environment homologation --database NOME --file backups/arquivo.sql --confirm RESTORE_HOMOLOGATION`: restaura somente em homologação.
