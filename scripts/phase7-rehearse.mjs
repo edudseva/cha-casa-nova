@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Offline only: reads a verified D1 export and runs migration SQL in memory.
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { readFileSync, readdirSync, openSync, writeSync, closeSync, existsSync, unlinkSync } from "node:fs";
 import { basename, resolve, sep } from "node:path";
@@ -92,6 +92,31 @@ function compare(source, target) {
   return differences;
 }
 
+// Replays the published version's D1 statements against the upgraded schema.
+// The savepoint guarantees that probes cannot enter the generated import.
+function verifyLegacyApplication(db) {
+  const giftId = `phase7-rollback-${randomUUID()}`;
+  db.exec("SAVEPOINT legacy_compatibility");
+  try {
+    db.prepare("SELECT payload FROM catalog_cache WHERE id = ?").get(1);
+    db.prepare("SELECT gift_id, status FROM reservations WHERE status = ? ORDER BY created_at DESC").all("purchased");
+    db.prepare("INSERT INTO reservations (gift_id, guest_name, guest_contact, delivery_choice, order_reference, message, status) VALUES (?, ?, ?, ?, ?, ?, ?)")
+      .run(giftId, "Teste de retorno", "", "casal", "", "", "purchased");
+    const reservation = db.prepare("SELECT site_id, status FROM reservations WHERE gift_id = ?").get(giftId);
+    if (reservation?.site_id !== siteId || reservation.status !== "purchased") fail("A versão anterior não consegue registrar reservas no site legado.");
+    db.prepare("INSERT INTO contributions (guest_name, guest_contact, amount_cents, transaction_reference, message, payment_status) VALUES (?, ?, ?, ?, ?, ?)")
+      .run("Teste de retorno", "", 123, "", "", "declared");
+    const contribution = db.prepare("SELECT site_id, amount_cents FROM contributions WHERE id = last_insert_rowid()").get();
+    if (contribution?.site_id !== siteId || contribution.amount_cents !== 123) fail("A versão anterior não consegue registrar contribuições no site legado.");
+    const cache = db.prepare("SELECT id, payload FROM catalog_cache WHERE id = ?").get(1);
+    if (cache) db.prepare("INSERT INTO catalog_cache (id, payload, synced_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(id) DO UPDATE SET payload = excluded.payload, synced_at = CURRENT_TIMESTAMP")
+      .run(1, cache.payload);
+    return true;
+  } finally {
+    db.exec("ROLLBACK TO legacy_compatibility; RELEASE legacy_compatibility");
+  }
+}
+
 function summary(data, checks, sourceSha) {
   return {
     sourceSha256: sourceSha,
@@ -131,6 +156,7 @@ function main() {
     }
     const upgrade = compare(original, snapshot(source.db, false));
     if (source.db.prepare("PRAGMA foreign_key_check").all().length || Object.values(upgrade).some(Boolean)) fail("A atualização no banco legado alterou registros.");
+    const legacyCompatibility = verifyLegacyApplication(source.db);
     if (options["--compare"]) {
       other = verifiedExport(options["--compare"]);
       const target = snapshot(other.db, false);
@@ -138,7 +164,7 @@ function main() {
         const badSite = other.db.prepare(`SELECT COUNT(*) AS count FROM ${table} WHERE site_id IS NULL OR site_id != ?`).get(siteId).count;
         if (badSite) fail(`A tabela ${table} contém registros de outro site.`);
       }
-      const result = { ...summary(original, compare(original, target), source.checksum), upgradeComparisons: upgrade };
+      const result = { ...summary(original, compare(original, target), source.checksum), upgradeComparisons: upgrade, legacyCompatibility };
       console.log(JSON.stringify(result));
       if (!result.passed) process.exitCode = 1;
       return;
@@ -150,7 +176,7 @@ function main() {
       rehearsal.exec("PRAGMA foreign_keys = ON");
       const sql = statements(original);
       rehearsal.exec(sql);
-      const result = { ...summary(original, compare(original, snapshot(rehearsal, false)), source.checksum), upgradeComparisons: upgrade };
+      const result = { ...summary(original, compare(original, snapshot(rehearsal, false)), source.checksum), upgradeComparisons: upgrade, legacyCompatibility };
       if (rehearsal.prepare("PRAGMA foreign_key_check").all().length || !result.passed) fail("A cópia não preservou todos os registros.");
       if (options["--output"]) result.outputFile = saveOutput(options["--output"], sql);
       console.log(JSON.stringify(result));

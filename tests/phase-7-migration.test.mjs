@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, writeFileSync, rmSync, chmodSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync, rmSync, chmodSync, readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 
@@ -15,6 +15,7 @@ test("ensaio offline preserva IDs, estado de presentes, valores e texto com apó
   const prefix = `phase7-synthetic-${process.pid}-${Date.now()}`;
   const source = new URL(`${prefix}.sql`, backups);
   const output = new URL(`${prefix}-import.sql`, backups);
+  const after = new URL(`${prefix}-after.sql`, backups);
   try {
     const fixture = [0, 1, 2].map((n) => {
       const names = ["0000_old_ser_duncan", "0001_lean_tony_stark", "0002_ambitious_paper_doll"];
@@ -33,6 +34,7 @@ test("ensaio offline preserva IDs, estado de presentes, valores e texto com apó
     assert.deepEqual(report.records, { reservations: 1, contributions: 1, catalog_cache: 1 });
     assert.equal(report.contributionCents, 12500);
     assert.equal(report.passed, true);
+    assert.equal(report.legacyCompatibility, true);
     assert.deepEqual(report.upgradeComparisons, { reservations: 0, contributions: 0, catalog_cache: 0 });
     const sql = readFileSync(output, "utf8");
     assert.equal(readFileSync(`${output.pathname}.sha256`, "utf8").slice(0, 64), createHash("sha256").update(sql).digest("hex"));
@@ -40,12 +42,30 @@ test("ensaio offline preserva IDs, estado de presentes, valores e texto com apó
     assert.match(sql, /cha-casa-nova-homologacao/);
     assert.doesNotMatch(sql, /DELETE|DROP TABLE/);
 
+    const migrations = readdirSync(new URL("../drizzle/", import.meta.url))
+      .filter((name) => /^\d{4}_.*\.sql$/.test(name)).sort()
+      .map((name) => read(`drizzle/${name}`)).join("\n").replaceAll("--> statement-breakpoint", "");
+    const compare = (dump) => {
+      writeFileSync(after, dump, { mode: 0o600 });
+      writeFileSync(`${after.pathname}.sha256`, `${createHash("sha256").update(dump).digest("hex")}  ${after.pathname}\n`, { mode: 0o600 });
+      return spawnSync(process.execPath, [script.pathname, "--source", source.pathname, "--compare", after.pathname], { cwd: root, encoding: "utf8" });
+    };
+    const copied = compare(`${migrations}\n${sql}`);
+    assert.equal(copied.status, 0, copied.stderr);
+    assert.deepEqual(JSON.parse(copied.stdout).comparisons, { reservations: 0, contributions: 0, catalog_cache: 0 });
+    const changedAmount = compare(`${migrations}\n${sql}\nUPDATE contributions SET amount_cents = 12501 WHERE id = 91;`);
+    assert.notEqual(changedAmount.status, 0);
+    assert.equal(JSON.parse(changedAmount.stdout).comparisons.contributions, 1);
+    const wrongSite = compare(`${migrations}\n${sql}\nUPDATE reservations SET site_id = 'outro-site' WHERE id = 23;`);
+    assert.notEqual(wrongSite.status, 0);
+    assert.match(wrongSite.stderr, /outro site/);
+
     writeFileSync(source, `${fixture}\n-- adulterado`);
     const corrupted = spawnSync(process.execPath, [script.pathname, "--source", source.pathname], { cwd: new URL("../", import.meta.url), encoding: "utf8" });
     assert.notEqual(corrupted.status, 0);
     assert.match(corrupted.stderr, /Integridade SHA-256/);
   } finally {
-    for (const file of [source.pathname, `${source.pathname}.sha256`, output.pathname, `${output.pathname}.sha256`]) rmSync(file, { force: true });
+    for (const file of [source.pathname, `${source.pathname}.sha256`, output.pathname, `${output.pathname}.sha256`, after.pathname, `${after.pathname}.sha256`]) rmSync(file, { force: true });
   }
 });
 
