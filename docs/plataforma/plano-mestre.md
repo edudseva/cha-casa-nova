@@ -12,11 +12,13 @@ Este documento é a referência de sequência, escopo e critérios de avanço da
 | 5 — Painel do proprietário | Gerenciar clientes, sites, modelos, planos, limites, domínios, suporte auditado, saúde, exportação e exclusão. | Concluída em homologação; integrações externas documentadas |
 | 6 — Produto comercial | Preparar página comercial, teste, cobrança, cupons, termos, privacidade, cancelamento, monitoramento e suporte. | Implementada em homologação privada; ativação comercial depende de integração e revisão jurídica |
 | 7 — Migração do site atual | Copiar e conferir dados, testar, sincronizar, trocar de forma controlada, monitorar e manter rollback. | Preparação e ensaio offline implementados; backup real e corte pendentes |
-| 8 — Segurança, conformidade e prontidão final | Auditar toda a solução, corrigir riscos e comprovar que a plataforma está pronta para operação comercial. | Planejada |
+| 8 — Segurança, conformidade e prontidão final | Auditar toda a solução, corrigir riscos e comprovar que a plataforma está pronta para operação comercial. | Revisão parcial antecipada em homologação; portão final pendente |
 
 ## Fase 8 — Segurança, conformidade e prontidão final
 
 Esta fase será executada depois da migração controlada e antes da liberação comercial definitiva. Ela não substitui as práticas de segurança aplicadas durante o desenvolvimento; funciona como uma verificação integral e um portão formal de lançamento.
+
+Correções independentes já podem ser antecipadas em homologação, sem declarar a fase concluída. Os resultados e pendências ficam em [fase-8-verificacao-final.md](fase-8-verificacao-final.md).
 
 ### Escopo obrigatório
 

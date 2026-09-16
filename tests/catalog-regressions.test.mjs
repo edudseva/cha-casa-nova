@@ -90,6 +90,84 @@ test('image loading survives a denied cache getter and a rejected cache lookup',
   }
 });
 
+test('image proxy refuses private redirect targets before contacting them', async () => {
+  const route = await loadSource('../app/api/product-image/route.ts', [
+    [/import gifts from "@\/data\/gifts.json";/, `const gifts = ${JSON.stringify(local)};`],
+    [/import \{ env \} from "cloudflare:workers";/, 'const env = { PRODUCT_IMAGES: { async get() { return null; }, async put() {} } };'],
+  ]);
+  const original = globalThis.fetch;
+  const product = 'https://www.amazon.com.br/dp/B0CJYJH5TD';
+  const requested = [];
+  globalThis.fetch = async (input, options) => {
+    requested.push(String(input));
+    assert.equal(options.redirect, 'manual');
+    return new Response(null, { status: 302, headers: { location: 'https://169.254.169.254/latest/meta-data' } });
+  };
+  try {
+    const result = await route.GET(new Request(`https://example.com/api/product-image?url=${encodeURIComponent(product)}`));
+    assert.equal(result.status, 404);
+    assert.ok(requested.includes(product));
+    assert.ok(requested.every((url) => !url.includes('169.254.169.254')));
+  } finally { globalThis.fetch = original; }
+});
+
+test('image proxy rejects a curated image that redirects to a private host', async () => {
+  const route = await loadSource('../app/api/product-image/route.ts', [
+    [/import gifts from "@\/data\/gifts.json";/, `const gifts = ${JSON.stringify(local)};`],
+    [/import \{ env \} from "cloudflare:workers";/, 'const env = { PRODUCT_IMAGES: { async get() { return null; }, async put() {} } };'],
+  ]);
+  const original = globalThis.fetch;
+  const requested = [];
+  globalThis.fetch = async (input, options) => {
+    requested.push(String(input));
+    assert.equal(options.redirect, 'manual');
+    return new Response(null, { status: 302, headers: { location: 'https://127.0.0.1/private' } });
+  };
+  try {
+    const image = encodeURIComponent('https://photos.example.com/gift.jpg');
+    const result = await route.GET(new Request(`https://example.com/api/product-image?gift=robo-aspirador&image=${image}`));
+    assert.equal(result.status, 404);
+    assert.ok(requested.every((url) => !url.includes('127.0.0.1')));
+  } finally { globalThis.fetch = original; }
+});
+
+test('legitimate retailer and image redirects still return the selected photo', async () => {
+  const route = await loadSource('../app/api/product-image/route.ts', [
+    [/import gifts from "@\/data\/gifts.json";/, `const gifts = ${JSON.stringify(local)};`],
+    [/import \{ env \} from "cloudflare:workers";/, 'const env = { PRODUCT_IMAGES: { async get() { return null; }, async put() {} } };'],
+  ]);
+  const original = globalThis.fetch;
+  const short = 'https://shp.ee/gift123';
+  const page = 'https://shopee.com.br/product/123';
+  const photo = 'https://cdn.example.com/photo.jpg';
+  globalThis.fetch = async (input, options) => {
+    assert.equal(options.redirect, 'manual');
+    const url = String(input);
+    if (url === short) return new Response(null, { status: 302, headers: { location: page } });
+    if (url === page) return new Response(`<meta property="og:image" content="${photo}">`);
+    if (url === photo || url.startsWith('https://wsrv.nl/')) return new Response(new Uint8Array(2000), { headers: { 'content-type': 'image/jpeg' } });
+    throw new Error('Unexpected destination');
+  };
+  try {
+    const result = await route.GET(new Request(`https://example.com/api/product-image?url=${encodeURIComponent(short)}`));
+    assert.equal(result.status, 200);
+  } finally { globalThis.fetch = original; }
+});
+
+test('store pages without Content-Length are bounded before image extraction', async () => {
+  const route = await loadSource('../app/api/product-image/route.ts', [
+    [/import gifts from "@\/data\/gifts.json";/, `const gifts = ${JSON.stringify(local)};`],
+    [/import \{ env \} from "cloudflare:workers";/, 'const env = { PRODUCT_IMAGES: { async get() { return null; }, async put() {} } };'],
+  ]);
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => new Response(new Uint8Array(3_000_001));
+  try {
+    const page = encodeURIComponent('https://shp.ee/gift123');
+    const result = await route.GET(new Request(`https://example.com/api/product-image?url=${page}`));
+    assert.equal(result.status, 404);
+  } finally { globalThis.fetch = original; }
+});
+
 test('an unavailable store image is not replaced by a misleading illustration', async () => {
   const route = await loadSource('../app/api/product-image/route.ts', [
     [/import gifts from "@\/data\/gifts.json";/, `const gifts = ${JSON.stringify(local)};`],

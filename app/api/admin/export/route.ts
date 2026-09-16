@@ -1,11 +1,7 @@
 import { env } from "cloudflare:workers";
 import { requireAdminApi } from "@/lib/admin-auth";
 import { CURRENT_SITE_ID } from "@/lib/site-context";
-
-function csvCell(value: unknown) {
-  const text = String(value ?? "");
-  return `"${text.replace(/"/g, '""')}"`;
-}
+import { csvCell } from "@/lib/csv-export";
 
 export async function GET(request: Request) {
   const auth = await requireAdminApi("reports.export");

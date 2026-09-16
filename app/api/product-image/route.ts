@@ -59,7 +59,9 @@ function isPublicHttpsUrl(value: string) {
   try {
     const url = new URL(value);
     const host = url.hostname.toLowerCase();
-    if (url.protocol !== "https:" || url.username || url.password || host === "localhost" || host.endsWith(".local") || host.includes(":")) return false;
+    if (url.protocol !== "https:" || url.username || url.password || url.port || !host.includes(".") || host.endsWith(".") ||
+      host === "localhost" || /\.(?:local|localhost|internal|test|invalid)$/.test(host) || host.includes(":")) return false;
+    if (/^\d+(?:\.\d+){3}$/.test(host) || host === "0.0.0.0") return false;
     if (/^(10|127|169\.254|192\.168)\./.test(host)) return false;
     const match = host.match(/^172\.(\d+)\./);
     if (match && Number(match[1]) >= 16 && Number(match[1]) <= 31) return false;
@@ -67,6 +69,41 @@ function isPublicHttpsUrl(value: string) {
   } catch {
     return false;
   }
+}
+
+async function fetchCheckedRedirects(url: string, init: RequestInit, allowed: (url: string) => boolean) {
+  let current = url;
+  for (let redirects = 0; redirects <= 3; redirects++) {
+    if (!allowed(current)) return null;
+    const response = await fetch(current, { ...init, redirect: "manual" });
+    if ([301, 302, 303, 307, 308].includes(response.status)) {
+      const location = response.headers.get("location");
+      if (!location || redirects === 3) return null;
+      current = new URL(location, current).toString();
+      continue;
+    }
+    if (response.url && !allowed(response.url)) return null;
+    return { response, url: response.url || current };
+  }
+  return null;
+}
+
+async function readPageBounded(response: Response) {
+  if (!response.body) return "";
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  while (true) {
+    const part = await reader.read();
+    if (part.done) break;
+    size += part.value.byteLength;
+    if (size > MAX_PAGE_BYTES) { await reader.cancel(); return null; }
+    chunks.push(part.value);
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  return new TextDecoder().decode(bytes);
 }
 
 function decodeHtml(value: string) {
@@ -162,7 +199,7 @@ async function mercadoLivreImage(value: string) {
 
   for (const endpoint of endpoints) {
     try {
-    const response = await fetch(endpoint, { signal: AbortSignal.timeout(1_500), headers: { accept: "application/json" } });
+    const response = await fetch(endpoint, { signal: AbortSignal.timeout(1_500), redirect: "error", headers: { accept: "application/json" } });
     if (!response.ok) continue;
     const data = await response.json() as {
       pictures?: Array<{ secure_url?: string; url?: string }>;
@@ -179,13 +216,16 @@ async function mercadoLivreImage(value: string) {
 async function fetchImage(imageUrl: string) {
   try {
     if (!isPublicHttpsUrl(imageUrl)) return null;
-    const image = await fetch(imageUrl, { signal: AbortSignal.timeout(3_000), headers: { accept: "image/avif,image/webp,image/jpeg,image/png" } });
+    const fetched = await fetchCheckedRedirects(imageUrl, { signal: AbortSignal.timeout(3_000), headers: { accept: "image/avif,image/webp,image/jpeg,image/png" } }, isPublicHttpsUrl);
+    if (!fetched) return null;
+    const image = fetched.response;
     const contentType = image.headers.get("content-type") ?? "";
+    const mediaType = contentType.split(";")[0].trim().toLowerCase();
     const contentLength = Number(image.headers.get("content-length") ?? "0");
     if (
       !image.ok ||
       !image.body ||
-      !contentType.toLowerCase().startsWith("image/") ||
+      !["image/avif", "image/webp", "image/jpeg", "image/png"].includes(mediaType) ||
       (contentLength > 0 && contentLength < 1_000) ||
       contentLength > MAX_IMAGE_BYTES
     ) return null;
@@ -292,26 +332,24 @@ async function resolveImage(request: Request) {
       if (proxied) return proxied;
     }
 
-    const page = await fetch(productUrl, {
+    const pageFetch = await fetchCheckedRedirects(productUrl.toString(), {
       signal: AbortSignal.timeout(3_500),
-      redirect: "follow",
       headers: {
         "accept": "text/html,application/xhtml+xml",
         "accept-language": "pt-BR,pt;q=0.9",
         "user-agent": "Mozilla/5.0 (compatible; ChaCasaNova/1.0; +https://evametodo.com.br)",
       },
-    });
-    if (!isPublicHttpsUrl(page.url) || !isAllowedRetailer(new URL(page.url).hostname)) {
-      return fallbackOrNotFound();
-    }
+    }, (value) => isPublicHttpsUrl(value) && isAllowedRetailer(new URL(value).hostname));
+    if (!pageFetch) return fallbackOrNotFound();
+    const { response: page, url: pageUrl } = pageFetch;
 
     // Links curtos podem revelar o produto mesmo quando a loja bloqueia o HTML.
-    const redirectedAsin = amazonAsin(page.url);
+    const redirectedAsin = amazonAsin(pageUrl);
     if (redirectedAsin) {
       const amazonImage = await proxyImage(`https://images-na.ssl-images-amazon.com/images/P/${redirectedAsin}.01.LZZZZZZZ.jpg`);
       if (amazonImage) return amazonImage;
     }
-    const redirectedMlImage = await mercadoLivreImage(page.url);
+    const redirectedMlImage = await mercadoLivreImage(pageUrl);
     if (redirectedMlImage) {
       const proxied = await proxyImage(redirectedMlImage);
       if (proxied) return proxied;
@@ -320,9 +358,10 @@ async function resolveImage(request: Request) {
     const pageLength = Number(page.headers.get("content-length") ?? "0");
     if (!page.ok || pageLength > MAX_PAGE_BYTES) return fallbackOrNotFound();
 
-    const html = await page.text();
-    const imageUrl = extractPrimaryImage(html, page.url)
-      ?? (new URL(page.url).hostname.endsWith("mercadolivre.com.br") ? extractMarketplaceImage(html, page.url) : null);
+    const html = await readPageBounded(page);
+    if (html === null) return fallbackOrNotFound();
+    const imageUrl = extractPrimaryImage(html, pageUrl)
+      ?? (new URL(pageUrl).hostname.endsWith("mercadolivre.com.br") ? extractMarketplaceImage(html, pageUrl) : null);
     if (!imageUrl || !isPublicHttpsUrl(imageUrl)) return fallbackOrNotFound();
 
     return await proxyImage(imageUrl) ?? await fallbackOrNotFound();
