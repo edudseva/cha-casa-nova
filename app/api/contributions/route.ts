@@ -1,3 +1,4 @@
+import { sameOrigin } from "@/lib/request-origin";
 import { env } from "cloudflare:workers";
 import { CURRENT_SITE_ID } from "@/lib/site-context";
 
@@ -10,11 +11,6 @@ type ContributionPayload = {
   paymentConfirmed?: boolean;
   website?: string;
 };
-
-function sameOrigin(request: Request) {
-  const origin = request.headers.get("origin");
-  return !origin || new URL(origin).host === new URL(request.url).host;
-}
 
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return Response.json({ error: "Origem inválida." }, { status: 403 });

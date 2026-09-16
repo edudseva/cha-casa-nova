@@ -1,13 +1,9 @@
+import { sameOrigin } from "@/lib/request-origin";
 import { env } from "cloudflare:workers";
 import { getChatGPTUser } from "@/app/chatgpt-auth";
 import { ensurePlatformUser, loadAccountAccess } from "@/lib/account-access";
 import { createAuditStatement } from "@/lib/audit-log";
 import { memberLimitReached } from "@/lib/platform-limits";
-
-function sameOrigin(request: Request) {
-  const origin = request.headers.get("origin");
-  return !origin || new URL(origin).host === new URL(request.url).host;
-}
 
 export async function PATCH(request: Request) {
   if (!sameOrigin(request)) return Response.json({ error: "Origem inválida." }, { status: 403 });

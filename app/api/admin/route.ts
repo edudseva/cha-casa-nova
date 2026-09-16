@@ -1,14 +1,10 @@
+import { sameOrigin } from "@/lib/request-origin";
 import { env } from "cloudflare:workers";
 import { requireAdminApi } from "@/lib/admin-auth";
 import { loadCatalog } from "@/lib/catalog";
 import { createAuditStatement } from "@/lib/audit-log";
 import { CURRENT_SITE_ID } from "@/lib/site-context";
 import { roleHasPermission } from "@/lib/event-access";
-
-function sameOrigin(request: Request) {
-  const origin = request.headers.get("origin");
-  return !origin || new URL(origin).host === new URL(request.url).host;
-}
 
 export async function GET() {
   const auth = await requireAdminApi("event.view");

@@ -26,11 +26,7 @@ export async function commercialCatalog() {
   };
 }
 
-export function sameOrigin(request: Request) {
-  const origin = request.headers.get("origin");
-  if (!origin) return true;
-  try { return new URL(origin).origin === new URL(request.url).origin; } catch { return false; }
-}
+export { sameOrigin } from "@/lib/request-origin";
 
 export async function limitedJson(request: Request, limit = 6000): Promise<Record<string, unknown> | null> {
   if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) return null;

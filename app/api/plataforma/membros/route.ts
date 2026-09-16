@@ -1,3 +1,4 @@
+import { sameOrigin } from "@/lib/request-origin";
 import { env } from "cloudflare:workers";
 import { requirePlatformOwnerApi } from "@/lib/platform-access";
 import { CURRENT_SITE_ID } from "@/lib/platform-workspace";
@@ -6,11 +7,6 @@ import { memberLimitReached } from "@/lib/platform-limits";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const INVITABLE_ROLES = new Set(["editor", "viewer"]);
-
-function sameOrigin(request: Request) {
-  const origin = request.headers.get("origin");
-  return !origin || new URL(origin).host === new URL(request.url).host;
-}
 
 async function accessSnapshot() {
   const [members, invitations] = await env.DB.batch([

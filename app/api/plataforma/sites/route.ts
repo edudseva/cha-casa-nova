@@ -1,3 +1,4 @@
+import { sameOrigin } from "@/lib/request-origin";
 import { env } from "cloudflare:workers";
 import { requirePlatformOwnerApi } from "@/lib/platform-access";
 import { createAuditStatement } from "@/lib/audit-log";
@@ -6,11 +7,6 @@ import { SITE_ENVIRONMENT } from "@/lib/site-context";
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{1,46}[a-z0-9])$/;
 const EVENT_TYPES = new Set(["cha-de-panela", "casamento", "cha-revelacao", "aniversario", "outro"]);
-
-function sameOrigin(request: Request) {
-  const origin = request.headers.get("origin");
-  return !origin || new URL(origin).host === new URL(request.url).host;
-}
 
 async function listSites() {
   const result = await env.DB.prepare(`SELECT id, slug, name, couple_names, event_type, event_date,

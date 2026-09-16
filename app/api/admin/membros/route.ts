@@ -1,3 +1,4 @@
+import { sameOrigin } from "@/lib/request-origin";
 import { env } from "cloudflare:workers";
 import { requireAdminApi } from "@/lib/admin-auth";
 import { ensurePlatformUser } from "@/lib/account-access";
@@ -8,11 +9,6 @@ import { memberLimitReached } from "@/lib/platform-limits";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const INVITABLE_ROLES = new Set(["editor", "viewer"]);
-
-function sameOrigin(request: Request) {
-  const origin = request.headers.get("origin");
-  return !origin || new URL(origin).host === new URL(request.url).host;
-}
 
 export async function GET() {
   const auth = await requireAdminApi("members.manage");

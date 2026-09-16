@@ -1,3 +1,4 @@
+import { sameOrigin } from "@/lib/request-origin";
 import { loadPixConfig } from "@/lib/runtime-config";
 
 function field(id: string, value: string) {
@@ -13,11 +14,6 @@ function crc16(payload: string) {
     }
   }
   return crc.toString(16).toUpperCase().padStart(4, "0");
-}
-
-function sameOrigin(request: Request) {
-  const origin = request.headers.get("origin");
-  return !origin || new URL(origin).host === new URL(request.url).host;
 }
 
 export async function GET() {

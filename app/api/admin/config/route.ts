@@ -1,3 +1,4 @@
+import { sameOrigin } from "@/lib/request-origin";
 import { requireAdminApi } from "@/lib/admin-auth";
 import {
   loadPixAdminConfig,
@@ -9,14 +10,6 @@ import type { SiteConfig } from "@/types/gift";
 import { createAuditStatement } from "@/lib/audit-log";
 import { CURRENT_SITE_ID } from "@/lib/site-context";
 import { galleryLimitExceeded } from "@/lib/platform-limits";
-
-function sameOrigin(request: Request) {
-  const origin = request.headers.get("origin");
-  return (
-    !origin ||
-    new URL(origin).host === new URL(request.url).host
-  );
-}
 
 export async function GET() {
   const auth = await requireAdminApi("event.settings.edit");

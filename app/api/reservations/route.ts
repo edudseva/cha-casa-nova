@@ -1,3 +1,4 @@
+import { sameOrigin } from "@/lib/request-origin";
 import { env } from "cloudflare:workers";
 import { loadCatalog } from "@/lib/catalog";
 import { CURRENT_SITE_ID } from "@/lib/site-context";
@@ -12,11 +13,6 @@ type ReservationPayload = {
   purchaseConfirmed?: boolean;
   website?: string;
 };
-
-function sameOrigin(request: Request) {
-  const origin = request.headers.get("origin");
-  return !origin || new URL(origin).host === new URL(request.url).host;
-}
 
 export async function GET() {
   try {

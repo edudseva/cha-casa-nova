@@ -1,3 +1,4 @@
+import { sameOrigin } from "@/lib/request-origin";
 import { env } from "cloudflare:workers";
 import { requireAdminApi } from "@/lib/admin-auth";
 import { createAuditStatement } from "@/lib/audit-log";
@@ -8,11 +9,6 @@ import { validateSiteEditor } from "@/lib/site-config-validation";
 import { ensurePlatformUser } from "@/lib/account-access";
 import { galleryLimitExceeded } from "@/lib/platform-limits";
 import type { PixAdminConfig, SiteConfig } from "@/types/gift";
-
-function sameOrigin(request: Request) {
-  const origin = request.headers.get("origin");
-  return !origin || new URL(origin).host === new URL(request.url).host;
-}
 
 export async function GET() {
   const auth = await requireAdminApi("event.settings.edit");

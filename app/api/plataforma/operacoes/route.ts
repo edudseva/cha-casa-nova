@@ -1,3 +1,4 @@
+import { sameOrigin } from "@/lib/request-origin";
 import { env } from "cloudflare:workers";
 import { requirePlatformOwnerApi } from "@/lib/platform-access";
 import { createAuditStatement } from "@/lib/audit-log";
@@ -64,11 +65,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const origin = request.headers.get("origin");
-  if (origin) {
-    try { if (new URL(origin).origin !== new URL(request.url).origin) return error("Origem inválida.", 403); }
-    catch { return error("Origem inválida.", 403); }
-  }
+  if (!sameOrigin(request)) return error("Origem inválida.", 403);
   const auth = await requirePlatformOwnerApi();
   if (!auth.ok) return error(auth.error, auth.status);
   const body = await readBody(request);
