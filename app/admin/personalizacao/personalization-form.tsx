@@ -2,7 +2,7 @@
 
 import { FormEvent, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, CalendarDays, CheckCircle2, Cloud, Eye, Gift, History, Home, Images, Info, Landmark, Link2, LoaderCircle, Redo2, Save, Send, ShieldCheck, Sparkles, Undo2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CalendarDays, CheckCircle2, Cloud, Eye, Gift, History, Home, Images, Info, Landmark, Link2, LoaderCircle, Redo2, Save, Send, ShieldCheck, Sparkles, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -244,7 +244,7 @@ export function PersonalizationForm({
   return <main className="admin-page">
     <header className="admin-header">
       <Link className="brand" href="/"><span className="brand-mark"><Home size={18} /></span><span><small>Painel do evento</small>{config.brandLabel}</span></Link>
-      <Button asChild variant="outline"><Link href="/admin">Voltar ao painel</Link></Button>
+      <Button asChild variant="outline"><Link href="/admin" aria-label="Voltar ao painel"><ArrowLeft /> <span className="admin-back-label">Voltar ao painel</span></Link></Button>
     </header>
     <section className="admin-shell admin-config-shell">
       <div className="admin-heading-row"><div className="admin-heading"><p className="eyebrow">Configuração do evento</p><h1>Personalização</h1><p>Centralize aqui as informações do casal, o evento, a lista, o Pix, as páginas e a identidade visual.</p></div><span className="admin-context-pill"><Sparkles /> Identidade e conteúdo</span></div>

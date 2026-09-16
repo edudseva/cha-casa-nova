@@ -32,6 +32,7 @@ export function AdminDashboard({ displayName, role, canManage, showPlatformLink 
   const [data, setData] = useState<AdminData>({ reservations: [], contributions: [], catalog: { total: 0, reserved: 0, available: 0, source: "" } });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [pixFilter, setPixFilter] = useState<"declared" | "all">("declared");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -55,6 +56,7 @@ export function AdminDashboard({ displayName, role, canManage, showPlatformLink 
     declaredPix: data.contributions.filter((item) => item.payment_status === "declared").length,
     confirmedPix: data.contributions.filter((item) => item.payment_status === "confirmed").reduce((sum, item) => sum + item.amount_cents, 0),
   }), [data]);
+  const visibleContributions = pixFilter === "declared" ? data.contributions.filter((item) => item.payment_status === "declared") : data.contributions;
 
   const guests = useMemo(() => {
     const rows = new Map<string, { key: string; name: string; contact: string; gifts: number; pix: number; interactions: number; last: string }>();
@@ -94,7 +96,7 @@ export function AdminDashboard({ displayName, role, canManage, showPlatformLink 
     <main className="admin-page">
       <header className="admin-header">
         <Link className="brand" href="/"><span className="brand-mark"><Home size={18} /></span><span><small>Painel do evento</small>Nosso cantinho</span></Link>
-        <div><span className="admin-user"><strong>{displayName}</strong><small>{roleLabels[role] ?? role}</small></span>{showPlatformLink && <Button asChild variant="outline"><Link href="/plataforma"><Building2 /> Plataforma</Link></Button>}{canManage && <Button asChild variant="outline"><Link href="/admin/personalizacao"><Palette /> Personalização</Link></Button>}{role === "owner" && <Button asChild variant="outline"><Link href="/admin/usuarios"><UsersRound /> Usuários</Link></Button>}<Button asChild variant="outline"><Link href="/conta"><UserRound /> Conta</Link></Button><Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw /> Atualizar</Button></div>
+        <div><span className="admin-user"><strong>{displayName}</strong><small>{roleLabels[role] ?? role}</small></span><Button asChild variant="outline"><Link href="/conta"><UserRound /> Conta</Link></Button><Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw /> Atualizar</Button></div>
       </header>
       <section className="admin-shell">
         <div className="admin-heading-row">
@@ -107,14 +109,17 @@ export function AdminDashboard({ displayName, role, canManage, showPlatformLink 
           <article className="admin-metric admin-metric-total"><span className="admin-metric-icon"><CircleDollarSign /></span><div><small>Total conferido</small><strong>{money.format(summary.confirmedPix / 100)}</strong><span>em contribuições por Pix</span></div></article>
         </div>
 
-        <nav className="admin-workspace-nav" aria-label="Áreas do painel">
+        <div className="admin-section-label"><strong>Gerenciar o evento</strong><span>Conteúdo, equipe e experiência dos convidados</span></div>
+        <nav className="admin-workspace-nav" aria-label="Gerenciar o evento">
           {canManage && <Link href="/admin/personalizacao"><span><Palette /></span><div><strong>Conteúdo e aparência</strong><small>Evento, páginas, fotos, lista, Pix e cores</small></div><ChevronRight /></Link>}
           {role === "owner" && <Link href="/admin/usuarios"><span><UsersRound /></span><div><strong>Usuários do evento</strong><small>Convites, perfis e revogação de acesso</small></div><ChevronRight /></Link>}
+          {showPlatformLink && <Link href="/plataforma"><span><Building2 /></span><div><strong>Plataforma</strong><small>Sites e operação geral</small></div><ChevronRight /></Link>}
           <Link href="/" target="_blank" rel="noopener noreferrer"><span><Eye /></span><div><strong>Visualizar site</strong><small>Abra a experiência atual dos convidados</small></div><ChevronRight /></Link>
         </nav>
 
+        <div className="admin-section-label"><strong>Acompanhar interações</strong><span>Confira registros e trate pendências antes de exportar</span></div>
         <Tabs defaultValue="presentes" className="admin-tabs">
-          <TabsList><TabsTrigger value="presentes"><Gift /> Presentes</TabsTrigger><TabsTrigger value="pix"><CircleDollarSign /> Pix</TabsTrigger><TabsTrigger value="convidados"><UsersRound /> Convidados</TabsTrigger><TabsTrigger value="relatorios"><BarChart3 /> Relatórios</TabsTrigger></TabsList>
+          <TabsList><TabsTrigger value="presentes"><Gift /> Presentes</TabsTrigger><TabsTrigger value="pix"><CircleDollarSign /> Pix {summary.declaredPix > 0 && <span className="admin-tab-count">{summary.declaredPix}</span>}</TabsTrigger><TabsTrigger value="convidados"><UsersRound /> Convidados</TabsTrigger><TabsTrigger value="relatorios"><BarChart3 /> Relatórios</TabsTrigger></TabsList>
           <TabsContent value="presentes" className="admin-panel">
             <div className="admin-panel-heading"><div><h2>Presentes</h2><p>Desfaça uma confirmação somente quando ela tiver sido registrada por engano.</p></div><Button asChild variant="outline"><a href="/api/admin/export?type=presentes"><Download /> Exportar CSV</a></Button></div>
             <p className="admin-mobile-hint">Deslize a tabela para o lado para consultar todos os dados.</p>
@@ -125,12 +130,13 @@ export function AdminDashboard({ displayName, role, canManage, showPlatformLink 
             </TableBody></Table></div>
           </TabsContent>
           <TabsContent value="pix" className="admin-panel">
-            <div className="admin-panel-heading"><div><h2>Contribuições por Pix</h2><p>O valor só entra no total abaixo depois que vocês conferirem no banco.</p></div><Button asChild variant="outline"><a href="/api/admin/export?type=pix"><Download /> Exportar CSV</a></Button></div>
+            <div className="admin-panel-heading"><div><h2>Contribuições por Pix</h2><p>Confira cada pagamento no banco antes de marcar como conferido.</p></div><Button asChild variant="outline"><a href="/api/admin/export?type=pix"><Download /> Exportar CSV</a></Button></div>
+            <div className="admin-list-controls" role="group" aria-label="Filtrar contribuições Pix"><Button type="button" size="sm" variant={pixFilter === "declared" ? "default" : "outline"} aria-pressed={pixFilter === "declared"} onClick={() => setPixFilter("declared")}>Aguardando conferência ({summary.declaredPix})</Button><Button type="button" size="sm" variant={pixFilter === "all" ? "default" : "outline"} aria-pressed={pixFilter === "all"} onClick={() => setPixFilter("all")}>Todas ({data.contributions.length})</Button></div>
             <p className="admin-mobile-hint">Deslize a tabela para o lado para consultar todos os dados.</p>
             <div className="admin-table-wrap"><Table><TableHeader><TableRow><TableHead>Convidado</TableHead><TableHead>Valor</TableHead><TableHead>Referência</TableHead><TableHead>Data</TableHead><TableHead>Situação</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader><TableBody>
               {loading && <TableRow><TableCell colSpan={6} className="admin-empty">Carregando contribuições...</TableCell></TableRow>}
-              {data.contributions.map((item) => <TableRow key={item.id}><TableCell><strong>{item.guest_name}</strong><small>{item.guest_contact || "Sem contato"}</small>{item.message && <small>{item.message}</small>}</TableCell><TableCell>{money.format(item.amount_cents / 100)}</TableCell><TableCell className="admin-reference">{item.transaction_reference || "—"}</TableCell><TableCell>{date.format(new Date(`${item.created_at}Z`))}</TableCell><TableCell><Badge variant={item.payment_status === "confirmed" ? "default" : "secondary"}>{item.payment_status === "confirmed" ? "Conferido" : item.payment_status === "rejected" ? "Não localizado" : "Declarado"}</Badge></TableCell><TableCell className="admin-actions">{canManage ? <><Button size="sm" disabled={updating === `contribution-${item.id}`} onClick={() => void update("contribution", item.id, "confirmed")}><Check /> Conferir</Button><Button size="sm" variant="outline" disabled={updating === `contribution-${item.id}`} onClick={() => void update("contribution", item.id, "rejected")}>Não localizado</Button></> : <span className="admin-read-only">Somente leitura</span>}</TableCell></TableRow>)}
-              {!loading && !data.contributions.length && <TableRow><TableCell colSpan={6} className="admin-empty">Nenhuma contribuição registrada.</TableCell></TableRow>}
+              {!loading && visibleContributions.map((item) => <TableRow key={item.id}><TableCell><strong>{item.guest_name}</strong><small>{item.guest_contact || "Sem contato"}</small>{item.message && <small>{item.message}</small>}</TableCell><TableCell>{money.format(item.amount_cents / 100)}</TableCell><TableCell className="admin-reference">{item.transaction_reference || "—"}</TableCell><TableCell>{date.format(new Date(`${item.created_at}Z`))}</TableCell><TableCell><Badge variant={item.payment_status === "confirmed" ? "default" : "secondary"}>{item.payment_status === "confirmed" ? "Conferido" : item.payment_status === "rejected" ? "Não localizado" : "Declarado"}</Badge></TableCell><TableCell className="admin-actions">{canManage ? <><Button size="sm" disabled={updating === `contribution-${item.id}` || item.payment_status === "confirmed"} onClick={() => void update("contribution", item.id, "confirmed")}><Check /> Conferir</Button><Button size="sm" variant="outline" disabled={updating === `contribution-${item.id}` || item.payment_status === "rejected"} onClick={() => void update("contribution", item.id, "rejected")}>Não localizado</Button></> : <span className="admin-read-only">Somente leitura</span>}</TableCell></TableRow>)}
+              {!loading && !visibleContributions.length && <TableRow><TableCell colSpan={6} className="admin-empty">{pixFilter === "declared" ? "Nenhuma contribuição aguardando conferência." : "Nenhuma contribuição registrada."}</TableCell></TableRow>}
             </TableBody></Table></div>
           </TabsContent>
           <TabsContent value="convidados" className="admin-panel">
