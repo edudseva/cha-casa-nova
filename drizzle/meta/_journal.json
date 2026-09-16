@@ -57,6 +57,13 @@
       "when": 1789496625827,
       "tag": "0007_clever_calypso",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1789519289554,
+      "tag": "0008_neat_wild_child",
+      "breakpoints": true
     }
   ]
 }

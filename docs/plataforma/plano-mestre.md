@@ -8,7 +8,7 @@ Este documento é a referência de sequência, escopo e critérios de avanço da
 | 1 — Base multiusuário | Estruturar usuários, sites, vínculos, papéis, convites, `site_id` e auditoria. | Concluída em homologação |
 | 2 — Autenticação e autorização | Consolidar login, sessões, recuperação, perfis, convites e políticas de acesso. | Concluída em homologação |
 | 3 — Painel do casal | Permitir administrar conteúdo, evento, aparência, presentes, Pix, fotos, convidados, relatórios e usuários sem suporte técnico. | Concluída em homologação |
-| 4 — Experiência de edição | Implementar salvamento automático, rascunho, publicação, prévia, versões, desfazer, validação e ajuda contextual. | Planejada |
+| 4 — Experiência de edição | Implementar salvamento automático, rascunho, publicação, prévia, versões, desfazer, validação e ajuda contextual. | Concluída em homologação |
 | 5 — Painel do proprietário | Gerenciar clientes, sites, modelos, planos, limites, domínios, suporte auditado, saúde, exportação e exclusão. | Planejada |
 | 6 — Produto comercial | Preparar página comercial, teste, cobrança, cupons, termos, privacidade, cancelamento, monitoramento e suporte. | Planejada |
 | 7 — Migração do site atual | Copiar e conferir dados, testar, sincronizar, trocar de forma controlada, monitorar e manter rollback. | Planejada |

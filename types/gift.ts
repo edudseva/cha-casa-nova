@@ -70,3 +70,15 @@ export type PixAdminConfig = {
   city: string;
   hasKey: boolean;
 };
+
+export type SiteEditorIssue = {
+  field: string;
+  message: string;
+  level: "error" | "warning";
+};
+
+export type SiteConfigVersionSummary = {
+  id: number;
+  createdAt: string;
+  createdByEmail: string;
+};

@@ -110,4 +110,8 @@ A autenticação usa a identidade segura fornecida pelo ambiente, enquanto as pe
 
 O painel do casal em `/admin` reúne presentes, Pix, convidados, relatórios e atalhos para conteúdo e aparência. O responsável principal gerencia convites e perfis em `/admin/usuarios`; a personalização de identidade, evento, páginas, galeria, planilha, Pix e cores permanece em `/admin/personalizacao`.
 
+Na Fase 4, a personalização ganhou rascunho automático por usuário, validação contínua, prévia protegida em desktop e mobile, publicação explícita, desfazer/refazer e histórico restaurável. Mudanças em edição não chegam aos convidados até o comando de publicação, e a chave Pix não é incluída no autosave nem nas versões.
+
+Detalhes: [`docs/plataforma/fase-4-experiencia-edicao.md`](docs/plataforma/fase-4-experiencia-edicao.md).
+
 O escopo e os critérios de conclusão estão documentados em [`docs/plataforma/fase-3-painel-do-casal.md`](docs/plataforma/fase-3-painel-do-casal.md).
