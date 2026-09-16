@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const reservations = sqliteTable("reservations", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -94,6 +94,51 @@ export const platformPlans = sqliteTable("platform_plans", {
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const commercialLaunch = sqliteTable("commercial_launch", {
+  id: integer("id").primaryKey(),
+  headline: text("headline").notNull().default("Seu evento, do seu jeito"),
+  description: text("description").notNull().default("Crie um espaço para celebrar e organizar seu evento."),
+  trialDays: integer("trial_days").notNull().default(14),
+  salesEmail: text("sales_email").notNull().default(""),
+  termsDraft: text("terms_draft").notNull().default(""),
+  privacyDraft: text("privacy_draft").notNull().default(""),
+  billingStatus: text("billing_status").notNull().default("unconfigured"),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const commercialCoupons = sqliteTable("commercial_coupons", {
+  id: text("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  discountPercent: integer("discount_percent").notNull(),
+  expiresAt: text("expires_at"),
+  active: integer("active").notNull().default(1),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  index("idx_coupons_active_expiry").on(table.active, table.expiresAt),
+  check("coupon_percent_range", sql`${table.discountPercent} BETWEEN 1 AND 100`),
+]);
+
+export const commercialRequests = sqliteTable("commercial_requests", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  email: text("email").notNull(),
+  kind: text("kind").notNull(),
+  status: text("status").notNull().default("pending"),
+  planId: text("plan_id").references(() => platformPlans.id),
+  couponCode: text("coupon_code").notNull().default(""),
+  amountCents: integer("amount_cents"),
+  note: text("note").notNull().default(""),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  index("idx_commercial_requests_user_created").on(table.userId, table.createdAt),
+  index("idx_commercial_requests_status_created").on(table.status, table.createdAt),
+  uniqueIndex("idx_commercial_one_pending_kind").on(table.userId, table.email, table.kind)
+    .where(sql`${table.kind} IN ('trial','order') AND ${table.status} IN ('trial_requested','awaiting_payment_setup')`),
+  check("commercial_request_kind", sql`${table.kind} IN ('trial','order','support')`),
+  check("commercial_request_amount", sql`${table.amountCents} IS NULL OR ${table.amountCents} >= 0`),
+]);
 
 export const siteTemplates = sqliteTable("site_templates", {
   id: text("id").primaryKey(),

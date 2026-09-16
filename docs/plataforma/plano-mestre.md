@@ -10,7 +10,7 @@ Este documento é a referência de sequência, escopo e critérios de avanço da
 | 3 — Painel do casal | Permitir administrar conteúdo, evento, aparência, presentes, Pix, fotos, convidados, relatórios e usuários sem suporte técnico. | Concluída em homologação |
 | 4 — Experiência de edição | Implementar salvamento automático, rascunho, publicação, prévia, versões, desfazer, validação e ajuda contextual. | Concluída em homologação |
 | 5 — Painel do proprietário | Gerenciar clientes, sites, modelos, planos, limites, domínios, suporte auditado, saúde, exportação e exclusão. | Concluída em homologação; integrações externas documentadas |
-| 6 — Produto comercial | Preparar página comercial, teste, cobrança, cupons, termos, privacidade, cancelamento, monitoramento e suporte. | Planejada |
+| 6 — Produto comercial | Preparar página comercial, teste, cobrança, cupons, termos, privacidade, cancelamento, monitoramento e suporte. | Implementada em homologação privada; ativação comercial depende de integração e revisão jurídica |
 | 7 — Migração do site atual | Copiar e conferir dados, testar, sincronizar, trocar de forma controlada, monitorar e manter rollback. | Planejada |
 | 8 — Segurança, conformidade e prontidão final | Auditar toda a solução, corrigir riscos e comprovar que a plataforma está pronta para operação comercial. | Planejada |
 

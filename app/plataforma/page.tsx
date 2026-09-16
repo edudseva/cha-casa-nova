@@ -23,7 +23,7 @@ export default async function PlatformPage() {
       <div><span className="admin-user"><strong>{user.displayName}</strong><small>Proprietário</small></span><Button asChild variant="outline"><Link href="/conta"><UserRound /> Conta</Link></Button><Button asChild variant="outline"><Link href="/admin"><Home /> Painel do evento</Link></Button></div>
     </header>
     <section className="platform-shell">
-      <div className="platform-heading-row"><div className="platform-heading"><p className="eyebrow">Operação da plataforma</p><h1>Central do proprietário</h1><p>Controle clientes, sites, planos e atendimento em um único lugar.</p></div><span className="platform-context-pill"><ShieldCheck /> Acesso reservado</span></div>
+      <div className="platform-heading-row"><div className="platform-heading"><p className="eyebrow">Operação da plataforma</p><h1>Central do proprietário</h1><p>Controle clientes, sites, planos e atendimento em um único lugar.</p><p><Link className="commercial-inline" href="/plataforma/comercial">Abrir operação comercial →</Link></p></div><span className="platform-context-pill"><ShieldCheck /> Acesso reservado</span></div>
       <OwnerConsole initial={owner} legacySites={access.siteRows} />
     </section>
   </main>;

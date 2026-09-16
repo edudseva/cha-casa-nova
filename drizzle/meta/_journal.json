@@ -71,6 +71,20 @@
       "when": 1789562047246,
       "tag": "0009_lush_lady_bullseye",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1789563368460,
+      "tag": "0010_wealthy_impossible_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1789563403609,
+      "tag": "0011_lumpy_silk_fever",
+      "breakpoints": true
     }
   ]
 }

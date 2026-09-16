@@ -119,3 +119,7 @@ O escopo e os critérios de conclusão estão documentados em [`docs/plataforma/
 ## Plataforma — Fase 5
 
 O painel exclusivo do proprietário em `/plataforma` reúne clientes, sites, planos e limites, modelos, solicitações de domínios, verificação interna de saúde, suporte auditado, exportação sem chave Pix e exclusão programada com prazo e confirmação. Consulte [`docs/plataforma/fase-5-painel-proprietario.md`](docs/plataforma/fase-5-painel-proprietario.md) para o comportamento e as integrações externas pendentes.
+
+## Plataforma — Fase 6
+
+A apresentação `/produto` e a central exclusiva `/plataforma/comercial` permitem preparar planos, interesse em teste/contratação, cupons de simulação, suporte e cancelamento de pedidos pendentes. Não há cobranças ou ativação automática. Os critérios de ativação e os limites estão em [`docs/plataforma/fase-6-produto-comercial.md`](docs/plataforma/fase-6-produto-comercial.md).
