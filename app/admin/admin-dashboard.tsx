@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Building2, Check, CircleDollarSign, Download, Gift, Home, LayoutDashboard, Palette, RefreshCw, RotateCcw, UserRound } from "lucide-react";
+import { BarChart3, Building2, Check, ChevronRight, CircleDollarSign, Download, Eye, Gift, Home, LayoutDashboard, Palette, RefreshCw, RotateCcw, UserRound, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ type Contribution = {
   id: number; guest_name: string; guest_contact: string; amount_cents: number;
   transaction_reference: string; message: string; payment_status: "declared" | "confirmed" | "rejected"; created_at: string;
 };
-type AdminData = { reservations: Reservation[]; contributions: Contribution[] };
+type AdminData = { reservations: Reservation[]; contributions: Contribution[]; catalog: { total: number; reserved: number; available: number; source: string } };
 
 const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const date = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" });
@@ -29,7 +29,7 @@ function deliveryLabel(value: string) {
 const roleLabels: Record<string, string> = { owner: "Responsável principal", editor: "Administrador", viewer: "Somente leitura" };
 
 export function AdminDashboard({ displayName, role, canManage, showPlatformLink }: { displayName: string; role: string; canManage: boolean; showPlatformLink: boolean }) {
-  const [data, setData] = useState<AdminData>({ reservations: [], contributions: [] });
+  const [data, setData] = useState<AdminData>({ reservations: [], contributions: [], catalog: { total: 0, reserved: 0, available: 0, source: "" } });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
 
@@ -56,6 +56,24 @@ export function AdminDashboard({ displayName, role, canManage, showPlatformLink 
     confirmedPix: data.contributions.filter((item) => item.payment_status === "confirmed").reduce((sum, item) => sum + item.amount_cents, 0),
   }), [data]);
 
+  const guests = useMemo(() => {
+    const rows = new Map<string, { key: string; name: string; contact: string; gifts: number; pix: number; interactions: number; last: string }>();
+    const add = (name: string, contact: string, kind: "gift" | "pix", value: number, createdAt: string) => {
+      const key = (contact.trim() || name.trim()).toLocaleLowerCase("pt-BR");
+      const current = rows.get(key) ?? { key, name, contact, gifts: 0, pix: 0, interactions: 0, last: createdAt };
+      current.name = current.name || name;
+      current.contact = current.contact || contact;
+      current.interactions += 1;
+      if (kind === "gift") current.gifts += 1;
+      else current.pix += value;
+      if (createdAt > current.last) current.last = createdAt;
+      rows.set(key, current);
+    };
+    data.reservations.forEach((item) => add(item.guest_name, item.guest_contact, "gift", 0, item.created_at));
+    data.contributions.forEach((item) => add(item.guest_name, item.guest_contact, "pix", item.amount_cents, item.created_at));
+    return [...rows.values()].sort((a, b) => b.last.localeCompare(a.last));
+  }, [data]);
+
   async function update(kind: "reservation" | "contribution", id: number, status: string) {
     const key = `${kind}-${id}`;
     setUpdating(key);
@@ -76,7 +94,7 @@ export function AdminDashboard({ displayName, role, canManage, showPlatformLink 
     <main className="admin-page">
       <header className="admin-header">
         <Link className="brand" href="/"><span className="brand-mark"><Home size={18} /></span><span><small>Painel do evento</small>Nosso cantinho</span></Link>
-        <div><span className="admin-user"><strong>{displayName}</strong><small>{roleLabels[role] ?? role}</small></span>{showPlatformLink && <Button asChild variant="outline"><Link href="/plataforma"><Building2 /> Plataforma</Link></Button>}{canManage && <Button asChild variant="outline"><Link href="/admin/personalizacao"><Palette /> Personalização</Link></Button>}<Button asChild variant="outline"><Link href="/conta"><UserRound /> Conta</Link></Button><Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw /> Atualizar</Button></div>
+        <div><span className="admin-user"><strong>{displayName}</strong><small>{roleLabels[role] ?? role}</small></span>{showPlatformLink && <Button asChild variant="outline"><Link href="/plataforma"><Building2 /> Plataforma</Link></Button>}{canManage && <Button asChild variant="outline"><Link href="/admin/personalizacao"><Palette /> Personalização</Link></Button>}{role === "owner" && <Button asChild variant="outline"><Link href="/admin/usuarios"><UsersRound /> Usuários</Link></Button>}<Button asChild variant="outline"><Link href="/conta"><UserRound /> Conta</Link></Button><Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw /> Atualizar</Button></div>
       </header>
       <section className="admin-shell">
         <div className="admin-heading-row">
@@ -89,8 +107,14 @@ export function AdminDashboard({ displayName, role, canManage, showPlatformLink 
           <article className="admin-metric admin-metric-total"><span className="admin-metric-icon"><CircleDollarSign /></span><div><small>Total conferido</small><strong>{money.format(summary.confirmedPix / 100)}</strong><span>em contribuições por Pix</span></div></article>
         </div>
 
+        <nav className="admin-workspace-nav" aria-label="Áreas do painel">
+          {canManage && <Link href="/admin/personalizacao"><span><Palette /></span><div><strong>Conteúdo e aparência</strong><small>Evento, páginas, fotos, lista, Pix e cores</small></div><ChevronRight /></Link>}
+          {role === "owner" && <Link href="/admin/usuarios"><span><UsersRound /></span><div><strong>Usuários do evento</strong><small>Convites, perfis e revogação de acesso</small></div><ChevronRight /></Link>}
+          <Link href="/" target="_blank" rel="noopener noreferrer"><span><Eye /></span><div><strong>Visualizar site</strong><small>Abra a experiência atual dos convidados</small></div><ChevronRight /></Link>
+        </nav>
+
         <Tabs defaultValue="presentes" className="admin-tabs">
-          <TabsList><TabsTrigger value="presentes"><Gift /> Presentes</TabsTrigger><TabsTrigger value="pix"><CircleDollarSign /> Pix</TabsTrigger></TabsList>
+          <TabsList><TabsTrigger value="presentes"><Gift /> Presentes</TabsTrigger><TabsTrigger value="pix"><CircleDollarSign /> Pix</TabsTrigger><TabsTrigger value="convidados"><UsersRound /> Convidados</TabsTrigger><TabsTrigger value="relatorios"><BarChart3 /> Relatórios</TabsTrigger></TabsList>
           <TabsContent value="presentes" className="admin-panel">
             <div className="admin-panel-heading"><div><h2>Presentes</h2><p>Desfaça uma confirmação somente quando ela tiver sido registrada por engano.</p></div><Button asChild variant="outline"><a href="/api/admin/export?type=presentes"><Download /> Exportar CSV</a></Button></div>
             <p className="admin-mobile-hint">Deslize a tabela para o lado para consultar todos os dados.</p>
@@ -108,6 +132,24 @@ export function AdminDashboard({ displayName, role, canManage, showPlatformLink 
               {data.contributions.map((item) => <TableRow key={item.id}><TableCell><strong>{item.guest_name}</strong><small>{item.guest_contact || "Sem contato"}</small>{item.message && <small>{item.message}</small>}</TableCell><TableCell>{money.format(item.amount_cents / 100)}</TableCell><TableCell className="admin-reference">{item.transaction_reference || "—"}</TableCell><TableCell>{date.format(new Date(`${item.created_at}Z`))}</TableCell><TableCell><Badge variant={item.payment_status === "confirmed" ? "default" : "secondary"}>{item.payment_status === "confirmed" ? "Conferido" : item.payment_status === "rejected" ? "Não localizado" : "Declarado"}</Badge></TableCell><TableCell className="admin-actions">{canManage ? <><Button size="sm" disabled={updating === `contribution-${item.id}`} onClick={() => void update("contribution", item.id, "confirmed")}><Check /> Conferir</Button><Button size="sm" variant="outline" disabled={updating === `contribution-${item.id}`} onClick={() => void update("contribution", item.id, "rejected")}>Não localizado</Button></> : <span className="admin-read-only">Somente leitura</span>}</TableCell></TableRow>)}
               {!loading && !data.contributions.length && <TableRow><TableCell colSpan={6} className="admin-empty">Nenhuma contribuição registrada.</TableCell></TableRow>}
             </TableBody></Table></div>
+          </TabsContent>
+          <TabsContent value="convidados" className="admin-panel">
+            <div className="admin-panel-heading"><div><h2>Convidados com interação</h2><p>Lista consolidada de quem confirmou presente ou declarou uma contribuição.</p></div><Button asChild variant="outline"><a href="/api/admin/export?type=convidados"><Download /> Exportar CSV</a></Button></div>
+            <p className="admin-mobile-hint">Deslize a tabela para o lado para consultar todos os dados.</p>
+            <div className="admin-table-wrap"><Table><TableHeader><TableRow><TableHead>Convidado</TableHead><TableHead>Contato</TableHead><TableHead>Presentes</TableHead><TableHead>Pix declarado</TableHead><TableHead>Interações</TableHead><TableHead>Última interação</TableHead></TableRow></TableHeader><TableBody>
+              {loading && <TableRow><TableCell colSpan={6} className="admin-empty">Carregando convidados...</TableCell></TableRow>}
+              {guests.map((guest) => <TableRow key={guest.key}><TableCell><strong>{guest.name || "Convidado"}</strong></TableCell><TableCell>{guest.contact || "Não informado"}</TableCell><TableCell>{guest.gifts}</TableCell><TableCell>{money.format(guest.pix / 100)}</TableCell><TableCell>{guest.interactions}</TableCell><TableCell>{date.format(new Date(`${guest.last}Z`))}</TableCell></TableRow>)}
+              {!loading && !guests.length && <TableRow><TableCell colSpan={6} className="admin-empty">Nenhum convidado interagiu com o site ainda.</TableCell></TableRow>}
+            </TableBody></Table></div>
+          </TabsContent>
+          <TabsContent value="relatorios" className="admin-panel">
+            <div className="admin-panel-heading"><div><h2>Relatório do evento</h2><p>Indicadores atualizados a partir das interações registradas neste site.</p></div><div className="admin-report-actions"><Button asChild variant="outline"><a href="/api/admin/export?type=presentes"><Download /> Presentes</a></Button><Button asChild variant="outline"><a href="/api/admin/export?type=pix"><Download /> Pix</a></Button></div></div>
+            <div className="admin-report-grid">
+              <article><small>Itens no catálogo</small><strong>{data.catalog.total}</strong><span>{data.catalog.available} disponíveis</span></article>
+              <article><small>Presentes confirmados</small><strong>{summary.gifts}</strong><span>{data.catalog.reserved} reservas ativas</span></article>
+              <article><small>Convidados identificados</small><strong>{guests.length}</strong><span>com ao menos uma interação</span></article>
+              <article><small>Pix confirmado</small><strong>{money.format(summary.confirmedPix / 100)}</strong><span>{summary.declaredPix} aguardando conferência</span></article>
+            </div>
           </TabsContent>
         </Tabs>
       </section>

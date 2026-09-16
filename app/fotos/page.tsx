@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ArrowLeft, Heart, Home, Lock, Maximize2 } from "lucide-react";
 import Link from "next/link";
 import { loadSiteConfig } from "@/lib/runtime-config";
+import type { PhotoGalleryItem } from "@/types/gift";
 
 export const dynamic = "force-dynamic";
 
@@ -10,23 +11,10 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: `Nossa história | ${config.seoTitle}`, description: `Um pouco da história de ${config.coupleNames} em fotos.` };
 }
 
-const photos = [
-  { src: "/photos/festa-junina.jpeg", alt: "Ana e Eduardo juntos em uma festa junina", label: "Celebrando juntos", featured: true },
-  { src: "/photos/aventura.jpeg", alt: "Ana e Eduardo em uma aventura na natureza", label: "Nossas aventuras" },
-  { src: "/photos/ana-e-gatinha.jpeg", alt: "Ana abraçada com a gatinha do casal", label: "Muito carinho" },
-  { src: "/photos/nossa-familia.jpeg", alt: "Ana e Eduardo com a gatinha e os cachorros", label: "Nossa família" },
-  { src: "/photos/carnaval-brasilia.jpeg", alt: "Ana e Eduardo juntos em Brasília", label: "Dias de alegria" },
-  { src: "/photos/nos-dois.jpeg", alt: "Ana e Eduardo juntos", label: "Nós dois" },
-  { src: "/photos/dia-especial.jpeg", alt: "Ana e Eduardo vestidos para uma ocasião especial", label: "Momentos especiais" },
-  { src: "/photos/machu-picchu-1.jpeg", alt: "Ana e Eduardo em Machu Picchu", label: "Conhecendo o mundo", featured: true },
-  { src: "/photos/machu-picchu-2.jpeg", alt: "Ana e Eduardo sentados em Machu Picchu", label: "Memórias para sempre" },
-  { src: "/photos/celebracao.jpeg", alt: "Ana e Eduardo juntos em uma comemoração", label: "Sempre juntos" },
-];
-
-function PhotoCard({ photo }: { photo: (typeof photos)[number] }) {
+function PhotoCard({ photo }: { photo: PhotoGalleryItem }) {
   return (
     <a className={`couple-photo ${photo.featured ? "couple-photo-featured" : ""}`} href={photo.src} target="_blank" rel="noopener noreferrer" aria-label={`Abrir foto: ${photo.label}`}>
-      <img src={photo.src} alt={photo.alt} loading="lazy" decoding="async" />
+      <img src={photo.src} alt={photo.alt} loading="lazy" decoding="async" referrerPolicy="no-referrer" />
       <span className="couple-photo-caption"><span>{photo.label}</span><Maximize2 size={16} aria-hidden="true" /></span>
     </a>
   );
@@ -34,6 +22,9 @@ function PhotoCard({ photo }: { photo: (typeof photos)[number] }) {
 
 export default async function PhotosPage() {
   const config = await loadSiteConfig();
+  const photos = config.photoGallery;
+  const heroMain = photos.find((photo) => photo.featured) ?? photos[0];
+  const heroDetail = photos.find((photo) => photo.src !== heroMain.src) ?? heroMain;
   return (
     <main className="photos-page">
       <header className="site-header photos-header">
@@ -49,8 +40,8 @@ export default async function PhotosPage() {
           <p>Entre aventuras, celebrações e muitos momentos especiais, chegamos ao começo de um novo capítulo: a construção do nosso lar.</p>
         </div>
         <div className="couple-hero-collage">
-          <img className="couple-hero-main" src="/photos/machu-picchu-2.jpeg" alt="Ana e Eduardo juntos em Machu Picchu" loading="eager" decoding="async" fetchPriority="high" />
-          <img className="couple-hero-detail" src="/photos/ana-e-gatinha.jpeg" alt="Ana com a gatinha do casal" loading="eager" decoding="async" />
+          <img className="couple-hero-main" src={heroMain.src} alt={heroMain.alt} loading="eager" decoding="async" fetchPriority="high" referrerPolicy="no-referrer" />
+          <img className="couple-hero-detail" src={heroDetail.src} alt={heroDetail.alt} loading="eager" decoding="async" referrerPolicy="no-referrer" />
           <span><Heart size={15} fill="currentColor" /> O nosso novo começo</span>
         </div>
       </section>

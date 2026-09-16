@@ -9,7 +9,8 @@ export type EventPermission =
   | "event.settings.edit"
   | "gifts.manage"
   | "pix.manage"
-  | "reports.export";
+  | "reports.export"
+  | "members.manage";
 
 export type EventAccess = {
   siteId: string;
@@ -20,7 +21,7 @@ export type EventAccess = {
 type AdminEnvironment = { ADMIN_EMAIL?: string; ADMIN_EMAILS?: string };
 
 const permissions: Record<EventRole, ReadonlySet<EventPermission>> = {
-  owner: new Set(["event.view", "event.settings.edit", "gifts.manage", "pix.manage", "reports.export"]),
+  owner: new Set(["event.view", "event.settings.edit", "gifts.manage", "pix.manage", "reports.export", "members.manage"]),
   editor: new Set(["event.view", "event.settings.edit", "gifts.manage", "pix.manage", "reports.export"]),
   viewer: new Set(["event.view"]),
 };

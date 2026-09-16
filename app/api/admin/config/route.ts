@@ -53,7 +53,7 @@ export async function PATCH(request: Request) {
 
   if (
     Number(request.headers.get("content-length") ?? 0) >
-    30000
+    60000
   ) {
     return Response.json(
       { error: "Dados enviados em excesso." },

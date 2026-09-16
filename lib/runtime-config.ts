@@ -1,13 +1,26 @@
 import { env } from "cloudflare:workers";
 import defaults from "@/data/site-config.json";
 import { CURRENT_SITE_ID } from "@/lib/site-context";
-import type { PixAdminConfig, SiteConfig } from "@/types/gift";
+import type { PhotoGalleryItem, PixAdminConfig, SiteConfig } from "@/types/gift";
 
 type PixEnvironment = { PIX_KEY?: string; PIX_RECEIVER?: string; PIX_CITY?: string };
 type PixInput = { enabled?: boolean; key?: string; receiver?: string; city?: string };
 type PixRuntimeConfig = PixAdminConfig & { key: string };
 
-const fallback = defaults as SiteConfig;
+const defaultPhotoGallery: PhotoGalleryItem[] = [
+  { src: "/photos/festa-junina.jpeg", alt: "Ana e Eduardo juntos em uma festa junina", label: "Celebrando juntos", featured: true },
+  { src: "/photos/aventura.jpeg", alt: "Ana e Eduardo em uma aventura na natureza", label: "Nossas aventuras", featured: false },
+  { src: "/photos/ana-e-gatinha.jpeg", alt: "Ana abraçada com a gatinha do casal", label: "Muito carinho", featured: false },
+  { src: "/photos/nossa-familia.jpeg", alt: "Ana e Eduardo com os animais da família", label: "Nossa família", featured: false },
+  { src: "/photos/carnaval-brasilia.jpeg", alt: "Ana e Eduardo juntos em Brasília", label: "Dias de alegria", featured: false },
+  { src: "/photos/nos-dois.jpeg", alt: "Ana e Eduardo juntos", label: "Nós dois", featured: false },
+  { src: "/photos/dia-especial.jpeg", alt: "Ana e Eduardo em uma ocasião especial", label: "Momentos especiais", featured: false },
+  { src: "/photos/machu-picchu-1.jpeg", alt: "Ana e Eduardo em Machu Picchu", label: "Conhecendo o mundo", featured: true },
+  { src: "/photos/machu-picchu-2.jpeg", alt: "Ana e Eduardo sentados em Machu Picchu", label: "Memórias para sempre", featured: false },
+  { src: "/photos/celebracao.jpeg", alt: "Ana e Eduardo juntos em uma comemoração", label: "Sempre juntos", featured: false },
+];
+
+const fallback = { ...defaults, photoGallery: defaultPhotoGallery } as SiteConfig;
 const colorPattern = /^#[0-9a-f]{6}$/i;
 
 function safeText(value: unknown, standard: string, limit: number, allowEmpty = false) {
@@ -49,6 +62,19 @@ export function cleanSiteConfig(input: Partial<SiteConfig>): SiteConfig {
     ? input.suggestedPixValues.map(Number).filter((value) => Number.isFinite(value) && value > 0 && value <= 100000).slice(0, 12)
     : fallback.suggestedPixValues;
 
+  const photos = Array.isArray(input.photoGallery)
+    ? input.photoGallery.flatMap((photo) => {
+        const src = safePublicUrl(photo?.src, "");
+        if (!src) return [];
+        return [{
+          src,
+          alt: safeText(photo?.alt, "Foto do casal", 180),
+          label: safeText(photo?.label, "Nossa história", 80),
+          featured: Boolean(photo?.featured),
+        }];
+      }).slice(0, 30)
+    : fallback.photoGallery;
+
   return {
     eventTitle: safeText(input.eventTitle, fallback.eventTitle, 100),
     coupleNames: safeText(input.coupleNames, fallback.coupleNames, 100),
@@ -64,6 +90,7 @@ export function cleanSiteConfig(input: Partial<SiteConfig>): SiteConfig {
     heroImageAlt: safeText(input.heroImageAlt, fallback.heroImageAlt, 180),
     couplePhoto: safePublicUrl(input.couplePhoto, fallback.couplePhoto),
     couplePhotoAlt: safeText(input.couplePhotoAlt, fallback.couplePhotoAlt, 180),
+    photoGallery: photos.length ? photos : fallback.photoGallery,
     deliveryAddress: safeText(input.deliveryAddress, fallback.deliveryAddress, 500),
     giftSheetCsvUrl: sheet,
     giftSectionEyebrow: safeText(input.giftSectionEyebrow, fallback.giftSectionEyebrow, 120),

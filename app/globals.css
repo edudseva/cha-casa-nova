@@ -1298,6 +1298,23 @@ section[id] { scroll-margin-top: 72px; }
 .admin-table-wrap [data-slot="badge"] { padding: 5px 9px; }
 .admin-table-wrap [data-slot="badge"][data-variant="default"] { background: #dfece3; color: #27543b; }
 .admin-mobile-hint { padding-inline: 24px; }
+.admin-workspace-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: -12px 0 32px; }
+.admin-workspace-nav > a { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 13px; align-items: center; min-height: 88px; padding: 17px 18px; background: rgba(255,253,248,.82); border: 1px solid var(--control-border); border-radius: 16px; box-shadow: 0 10px 28px rgba(24,37,30,.045); transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease; }
+.admin-workspace-nav > a:hover { transform: translateY(-2px); border-color: #aec3b4; box-shadow: 0 15px 34px rgba(24,37,30,.075); }
+.admin-workspace-nav > a > span { display: grid; place-items: center; width: 42px; height: 42px; color: var(--control-forest); background: #e6eee7; border-radius: 12px; }
+.admin-workspace-nav > a > svg { width: 17px; color: #8a978f; }
+.admin-workspace-nav div { display: grid; gap: 4px; min-width: 0; }
+.admin-workspace-nav strong { color: var(--control-forest); font-size: .88rem; }
+.admin-workspace-nav small { color: var(--control-muted); font-size: .74rem; line-height: 1.4; }
+.admin-report-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.admin-report-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; padding: 24px; }
+.admin-report-grid article { display: grid; align-content: start; min-height: 150px; padding: 20px; background: #f5f7f3; border: 1px solid #dce3da; border-radius: 15px; }
+.admin-report-grid small { color: #627168; font-size: .68rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+.admin-report-grid strong { margin-top: 17px; color: var(--control-forest); font-family: Georgia, serif; font-size: 1.75rem; line-height: 1; }
+.admin-report-grid span { margin-top: 9px; color: var(--control-muted); font-size: .76rem; line-height: 1.4; }
+.admin-users-shell { max-width: 1260px; }
+.admin-users-shell .platform-access-card { margin-top: 30px; }
+.platform-access-card-compact .platform-access-heading > span { display: none; }
 
 /* Platform owner area */
 .platform-page { background: radial-gradient(circle at 90% 2%, rgba(75,112,91,.12), transparent 28rem), #edf1ec; }
@@ -1403,6 +1420,8 @@ section[id] { scroll-margin-top: 72px; }
   .platform-context-pill { align-self: flex-start; }
   .admin-config-tabs { grid-template-columns: 190px minmax(0, 1fr); }
   .admin-config-save { margin-left: 208px; }
+  .admin-workspace-nav { grid-template-columns: 1fr; }
+  .admin-report-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 800px) {
@@ -1455,6 +1474,10 @@ section[id] { scroll-margin-top: 72px; }
   .admin-config-grid,
   .admin-color-grid { gap: 14px; }
   .admin-config-save p { display: none; }
+  .admin-report-grid { grid-template-columns: 1fr; padding: 18px; }
+  .admin-report-grid article { min-height: 122px; }
+  .admin-panel-heading { align-items: stretch; flex-direction: column; }
+  .admin-report-actions { justify-content: flex-start; }
 }
 
 /* Phase 2 — identity, roles and account access */

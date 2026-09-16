@@ -21,9 +21,16 @@ export async function GET() {
 
   const catalog = await loadCatalog();
   const names = new Map(catalog.gifts.map((gift) => [gift.id, gift.name]));
+  const reserved = new Set(reservations.results.filter((row) => row.status === "purchased").map((row) => String(row.gift_id)));
   return Response.json({
     reservations: reservations.results.map((row) => ({ ...row, gift_name: names.get(String(row.gift_id)) ?? String(row.gift_id) })),
     contributions: contributions.results,
+    catalog: {
+      total: catalog.gifts.length,
+      reserved: reserved.size,
+      available: Math.max(0, catalog.gifts.length - reserved.size),
+      source: catalog.source,
+    },
   }, { headers: { "cache-control": "no-store" } });
 }
 

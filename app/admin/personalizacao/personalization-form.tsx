@@ -30,6 +30,7 @@ export function PersonalizationForm({ initialConfig, initialPix }: { initialConf
   const [pix, setPix] = useState(initialPix);
   const [pixKey, setPixKey] = useState("");
   const [pixValues, setPixValues] = useState(initialConfig.suggestedPixValues.join(", "));
+  const [photoGalleryText, setPhotoGalleryText] = useState(initialConfig.photoGallery.map((photo) => `${photo.src} | ${photo.label} | ${photo.alt}${photo.featured ? " | destaque" : ""}`).join("\n"));
   const [saving, setSaving] = useState(false);
 
   function change<K extends keyof SiteConfig>(key: K, value: SiteConfig[K]) {
@@ -41,10 +42,14 @@ export function PersonalizationForm({ initialConfig, initialPix }: { initialConf
     setSaving(true);
     try {
       const suggestedPixValues = pixValues.split(/[;, ]+/).map(Number).filter((value) => Number.isFinite(value) && value > 0);
+      const photoGallery = photoGalleryText.split("\n").flatMap((line) => {
+        const [src = "", label = "", alt = "", featured = ""] = line.split("|").map((value) => value.trim());
+        return src ? [{ src, label: label || "Nossa história", alt: alt || label || "Foto do casal", featured: featured.toLocaleLowerCase("pt-BR") === "destaque" }] : [];
+      });
       const response = await fetch("/api/admin/config", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ config: { ...config, suggestedPixValues }, pix: { ...pix, key: pixKey } }),
+        body: JSON.stringify({ config: { ...config, suggestedPixValues, photoGallery }, pix: { ...pix, key: pixKey } }),
         signal: AbortSignal.timeout(10_000),
       });
       const result = await response.json() as { config?: SiteConfig; pix?: PixAdminConfig; error?: string };
@@ -53,6 +58,7 @@ export function PersonalizationForm({ initialConfig, initialPix }: { initialConf
       setPix(result.pix);
       setPixKey("");
       setPixValues(result.config.suggestedPixValues.join(", "));
+      setPhotoGalleryText(result.config.photoGallery.map((photo) => `${photo.src} | ${photo.label} | ${photo.alt}${photo.featured ? " | destaque" : ""}`).join("\n"));
       toast.success("Personalização salva. As mudanças já estão disponíveis no site.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível salvar.");
@@ -137,6 +143,7 @@ export function PersonalizationForm({ initialConfig, initialPix }: { initialConf
               <Field label="Descrição da imagem principal" wide><Input value={config.heroImageAlt} onChange={(e) => change("heroImageAlt", e.target.value)} /></Field>
               <Field label="Foto do casal" hint="Exemplo: /photos/nos-dois.jpeg" wide><Input value={config.couplePhoto} onChange={(e) => change("couplePhoto", e.target.value)} /></Field>
               <Field label="Descrição da foto do casal" wide><Input value={config.couplePhotoAlt} onChange={(e) => change("couplePhotoAlt", e.target.value)} /></Field>
+              <Field label="Galeria de fotos" hint="Uma foto por linha: endereço | legenda | descrição. Acrescente | destaque nas fotos maiores." wide><Textarea rows={9} value={photoGalleryText} onChange={(e) => setPhotoGalleryText(e.target.value)} placeholder="/photos/nossa-foto.jpeg | Um dia especial | Nós dois celebrando | destaque" /></Field>
             </div>
             <div className="admin-color-section"><h2>Cores do site</h2><div className="admin-color-grid">
               {colors.map(([key, label]) => <Field key={key} label={label}><span><input type="color" value={config.theme[key]} onChange={(e) => setConfig((current) => ({ ...current, theme: { ...current.theme, [key]: e.target.value } }))} /><Input value={config.theme[key]} onChange={(e) => setConfig((current) => ({ ...current, theme: { ...current.theme, [key]: e.target.value } }))} /></span></Field>)}

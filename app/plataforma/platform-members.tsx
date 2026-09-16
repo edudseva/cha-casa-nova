@@ -30,10 +30,14 @@ export function PlatformMembers({
   siteId,
   initialMembers,
   initialInvitations,
+  endpoint = "/api/plataforma/membros",
+  compact = false,
 }: {
   siteId: string;
   initialMembers: PlatformMember[];
   initialInvitations: PlatformInvitation[];
+  endpoint?: string;
+  compact?: boolean;
 }) {
   const [members, setMembers] = useState(initialMembers);
   const [invitations, setInvitations] = useState(initialInvitations);
@@ -50,7 +54,7 @@ export function PlatformMembers({
     event.preventDefault();
     setWorking("invite");
     try {
-      const response = await fetch("/api/plataforma/membros", {
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ email, role }),
@@ -72,7 +76,7 @@ export function PlatformMembers({
   async function updateInvitation(id: number, action: "cancel" | "resend") {
     setWorking(`${action}-${id}`);
     try {
-      const response = await fetch("/api/plataforma/membros", {
+      const response = await fetch(endpoint, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ kind: "invitation", id, action }),
@@ -92,7 +96,7 @@ export function PlatformMembers({
   async function updateMember(id: string, action: "role" | "revoke", nextRole?: string) {
     setWorking(`member-${id}`);
     try {
-      const response = await fetch("/api/plataforma/membros", {
+      const response = await fetch(endpoint, {
         method: "PATCH", headers: { "content-type": "application/json" },
         body: JSON.stringify({ kind: "member", id, action, role: nextRole }), signal: AbortSignal.timeout(8_000),
       });
@@ -105,9 +109,9 @@ export function PlatformMembers({
     } finally { setWorking(null); }
   }
 
-  return <section className="platform-access-card">
+  return <section className={`platform-access-card ${compact ? "platform-access-card-compact" : ""}`}>
     <div className="platform-access-heading">
-      <div><p className="eyebrow">Acessos do evento</p><h2>Administradores e convites</h2><p>Convide quem poderá administrar este site. O acesso fica vinculado somente ao evento selecionado.</p></div>
+      <div><p className="eyebrow">Acessos do evento</p><h2>Administradores e convites</h2><p>Convide quem poderá administrar este site. Cada pessoa terá acesso somente a este evento.</p></div>
       <span><ShieldCheck /> {siteId}</span>
     </div>
 

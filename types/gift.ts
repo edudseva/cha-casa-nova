@@ -11,6 +11,13 @@ export type Gift = {
   image: string | null;
 };
 
+export type PhotoGalleryItem = {
+  src: string;
+  alt: string;
+  label: string;
+  featured: boolean;
+};
+
 export type SiteConfig = {
   eventTitle: string;
   coupleNames: string;
@@ -26,6 +33,7 @@ export type SiteConfig = {
   heroImageAlt: string;
   couplePhoto: string;
   couplePhotoAlt: string;
+  photoGallery: PhotoGalleryItem[];
   deliveryAddress: string;
   giftSheetCsvUrl: string;
   giftSectionEyebrow: string;

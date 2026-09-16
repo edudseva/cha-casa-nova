@@ -105,3 +105,9 @@ Comandos de segurança:
 ## Plataforma — Fase 2
 
 A autenticação usa a identidade segura fornecida pelo ambiente, enquanto as permissões do evento são avaliadas no servidor. A área `/conta` reúne identidade, sessão, convites e vínculos; os perfis `owner`, `editor` e `viewer` seguem a matriz documentada em [`docs/plataforma/fase-2-autenticacao-autorizacao.md`](docs/plataforma/fase-2-autenticacao-autorizacao.md).
+
+## Plataforma — Fase 3
+
+O painel do casal em `/admin` reúne presentes, Pix, convidados, relatórios e atalhos para conteúdo e aparência. O responsável principal gerencia convites e perfis em `/admin/usuarios`; a personalização de identidade, evento, páginas, galeria, planilha, Pix e cores permanece em `/admin/personalizacao`.
+
+O escopo e os critérios de conclusão estão documentados em [`docs/plataforma/fase-3-painel-do-casal.md`](docs/plataforma/fase-3-painel-do-casal.md).
