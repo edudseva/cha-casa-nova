@@ -65,6 +65,7 @@ export function PlatformSites({ initialSites }: { initialSites: PlatformSite[] }
       setOpen(false);
       resetForm();
       toast.success("Estrutura do novo site criada em homologação.");
+      window.location.reload();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível criar o site.");
     } finally {

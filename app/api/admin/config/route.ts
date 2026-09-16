@@ -8,6 +8,7 @@ import {
 import type { SiteConfig } from "@/types/gift";
 import { createAuditStatement } from "@/lib/audit-log";
 import { CURRENT_SITE_ID } from "@/lib/site-context";
+import { galleryLimitExceeded } from "@/lib/platform-limits";
 
 function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
@@ -66,6 +67,10 @@ export async function PATCH(request: Request) {
                 config?: Partial<SiteConfig>;
                 pix?: { enabled?: boolean; key?: string; receiver?: string; city?: string };
               };
+
+              if (body.config?.photoGallery && await galleryLimitExceeded(CURRENT_SITE_ID, body.config.photoGallery.length)) {
+                return Response.json({ error: "A galeria ultrapassa o limite de fotos do plano." }, { status: 409 });
+              }
 
               const [config, pix] = await Promise.all([
                 saveSiteConfig(body.config ?? {}),

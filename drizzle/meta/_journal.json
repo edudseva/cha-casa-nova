@@ -64,6 +64,13 @@
       "when": 1789519289554,
       "tag": "0008_neat_wild_child",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1789562047246,
+      "tag": "0009_lush_lady_bullseye",
+      "breakpoints": true
     }
   ]
 }

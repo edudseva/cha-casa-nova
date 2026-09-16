@@ -79,6 +79,106 @@ export const eventSites = sqliteTable("event_sites", {
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
+export const platformPlans = sqliteTable("platform_plans", {
+  id: text("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  name: text("name").notNull(),
+  priceCents: integer("price_cents").notNull().default(0),
+  maxSites: integer("max_sites").notNull().default(1),
+  maxMembers: integer("max_members").notNull().default(2),
+  maxGifts: integer("max_gifts").notNull().default(100),
+  maxGalleryImages: integer("max_gallery_images").notNull().default(20),
+  customDomainEnabled: integer("custom_domain_enabled").notNull().default(0),
+  exportsEnabled: integer("exports_enabled").notNull().default(1),
+  active: integer("active").notNull().default(1),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const siteTemplates = sqliteTable("site_templates", {
+  id: text("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  name: text("name").notNull(),
+  description: text("description").notNull().default(""),
+  previewTheme: text("preview_theme").notNull().default("botanical"),
+  active: integer("active").notNull().default(1),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const platformClients = sqliteTable("platform_clients", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  status: text("status").notNull().default("active"),
+  notes: text("notes").notNull().default(""),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const siteCommercialSettings = sqliteTable("site_commercial_settings", {
+  siteId: text("site_id").primaryKey().references(() => eventSites.id, { onDelete: "cascade" }),
+  clientId: text("client_id").references(() => platformClients.id, { onDelete: "set null" }),
+  planId: text("plan_id").references(() => platformPlans.id, { onDelete: "set null" }),
+  templateId: text("template_id").references(() => siteTemplates.id, { onDelete: "set null" }),
+  healthStatus: text("health_status").notNull().default("pending"),
+  healthSummary: text("health_summary").notNull().default("{}"),
+  lastHealthCheckAt: text("last_health_check_at"),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  index("idx_site_commercial_client").on(table.clientId),
+  index("idx_site_commercial_plan").on(table.planId),
+]);
+
+export const siteDomains = sqliteTable("site_domains", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  siteId: text("site_id").notNull().references(() => eventSites.id, { onDelete: "cascade" }),
+  hostname: text("hostname").notNull().unique(),
+  status: text("status").notNull().default("pending"),
+  dnsTarget: text("dns_target").notNull().default(""),
+  verifiedAt: text("verified_at"),
+  lastCheckedAt: text("last_checked_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [index("idx_site_domains_site_status").on(table.siteId, table.status)]);
+
+export const platformSupportSessions = sqliteTable("platform_support_sessions", {
+  id: text("id").primaryKey(),
+  siteId: text("site_id").notNull().references(() => eventSites.id, { onDelete: "cascade" }),
+  actorUserId: text("actor_user_id").notNull().references(() => platformUsers.id),
+  actorEmail: text("actor_email").notNull(),
+  reason: text("reason").notNull(),
+  scope: text("scope").notNull().default("read_only"),
+  status: text("status").notNull().default("active"),
+  expiresAt: text("expires_at").notNull(),
+  endedAt: text("ended_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [index("idx_support_sessions_site_status").on(table.siteId, table.status, table.createdAt)]);
+
+export const platformDataExports = sqliteTable("platform_data_exports", {
+  id: text("id").primaryKey(),
+  siteId: text("site_id").notNull().references(() => eventSites.id, { onDelete: "cascade" }),
+  requestedBy: text("requested_by").notNull().references(() => platformUsers.id),
+  requestedByEmail: text("requested_by_email").notNull(),
+  status: text("status").notNull().default("completed"),
+  recordCount: integer("record_count").notNull().default(0),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [index("idx_data_exports_site_created").on(table.siteId, table.createdAt)]);
+
+export const siteDeletionRequests = sqliteTable("site_deletion_requests", {
+  id: text("id").primaryKey(),
+  siteId: text("site_id").notNull().references(() => eventSites.id, { onDelete: "cascade" }),
+  requestedBy: text("requested_by").notNull().references(() => platformUsers.id),
+  requestedByEmail: text("requested_by_email").notNull(),
+  reason: text("reason").notNull().default(""),
+  status: text("status").notNull().default("scheduled"),
+  scheduledFor: text("scheduled_for").notNull(),
+  cancelledAt: text("cancelled_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  index("idx_deletion_requests_site_status").on(table.siteId, table.status, table.createdAt),
+]);
+
 export const siteConfigDrafts = sqliteTable("site_config_drafts", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   siteId: text("site_id").notNull().references(() => eventSites.id, { onDelete: "cascade" }),

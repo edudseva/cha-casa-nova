@@ -6,6 +6,7 @@ import { CURRENT_SITE_ID } from "@/lib/site-context";
 import { loadSiteEditorState } from "@/lib/site-editor";
 import { validateSiteEditor } from "@/lib/site-config-validation";
 import { ensurePlatformUser } from "@/lib/account-access";
+import { galleryLimitExceeded } from "@/lib/platform-limits";
 import type { PixAdminConfig, SiteConfig } from "@/types/gift";
 
 function sameOrigin(request: Request) {
@@ -63,6 +64,9 @@ export async function PATCH(request: Request) {
 
     const errors = issues.filter((issue) => issue.level === "error");
     if (errors.length) return Response.json({ error: "Corrija os campos indicados antes de publicar.", issues }, { status: 422 });
+    if (await galleryLimitExceeded(CURRENT_SITE_ID, body.config.photoGallery?.length ?? 0)) {
+      return Response.json({ error: "A galeria ultrapassa o limite de fotos do plano." }, { status: 409 });
+    }
     const config = cleanSiteConfig(body.config);
     const [publishedConfig, publishedPix] = await Promise.all([
       saveSiteConfig(config),

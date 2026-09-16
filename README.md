@@ -115,3 +115,7 @@ Na Fase 4, a personalização ganhou rascunho automático por usuário, validaç
 Detalhes: [`docs/plataforma/fase-4-experiencia-edicao.md`](docs/plataforma/fase-4-experiencia-edicao.md).
 
 O escopo e os critérios de conclusão estão documentados em [`docs/plataforma/fase-3-painel-do-casal.md`](docs/plataforma/fase-3-painel-do-casal.md).
+
+## Plataforma — Fase 5
+
+O painel exclusivo do proprietário em `/plataforma` reúne clientes, sites, planos e limites, modelos, solicitações de domínios, verificação interna de saúde, suporte auditado, exportação sem chave Pix e exclusão programada com prazo e confirmação. Consulte [`docs/plataforma/fase-5-painel-proprietario.md`](docs/plataforma/fase-5-painel-proprietario.md) para o comportamento e as integrações externas pendentes.

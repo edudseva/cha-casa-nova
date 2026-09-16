@@ -2,6 +2,7 @@ import { env } from "cloudflare:workers";
 import { getChatGPTUser } from "@/app/chatgpt-auth";
 import { ensurePlatformUser, loadAccountAccess } from "@/lib/account-access";
 import { createAuditStatement } from "@/lib/audit-log";
+import { memberLimitReached } from "@/lib/platform-limits";
 
 function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
@@ -39,6 +40,7 @@ export async function PATCH(request: Request) {
     await createAuditStatement({ siteId: invitation.site_id, actor: user, action: "invitation.declined", entityType: "invitation", entityId: id }).run();
   } else {
     const storedUserId = await ensurePlatformUser(user);
+    if (await memberLimitReached(invitation.site_id, storedUserId)) return Response.json({ error: "O limite de membros do plano foi atingido. Solicite ao administrador um ajuste antes de aceitar." }, { status: 409 });
     await env.DB.batch([
       env.DB.prepare(`INSERT INTO site_memberships (site_id, user_id, role, status)
         VALUES (?, ?, ?, 'active')

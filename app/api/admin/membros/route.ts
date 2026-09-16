@@ -4,6 +4,7 @@ import { ensurePlatformUser } from "@/lib/account-access";
 import { createAuditStatement } from "@/lib/audit-log";
 import { loadEventMembers } from "@/lib/event-members";
 import { CURRENT_SITE_ID } from "@/lib/site-context";
+import { memberLimitReached } from "@/lib/platform-limits";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const INVITABLE_ROLES = new Set(["editor", "viewer"]);
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
     WHERE m.site_id = ? AND lower(u.email) = ? AND m.status = 'active' LIMIT 1`)
     .bind(CURRENT_SITE_ID, email).first();
   if (member) return Response.json({ error: "Essa pessoa já possui acesso ao evento." }, { status: 409 });
+  if (await memberLimitReached(CURRENT_SITE_ID)) return Response.json({ error: "O limite de membros do plano foi atingido." }, { status: 409 });
 
   const actorId = await ensurePlatformUser(auth.user);
   await env.DB.batch([
