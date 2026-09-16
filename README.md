@@ -123,3 +123,7 @@ O painel exclusivo do proprietário em `/plataforma` reúne clientes, sites, pla
 ## Plataforma — Fase 6
 
 A apresentação `/produto` e a central exclusiva `/plataforma/comercial` permitem preparar planos, interesse em teste/contratação, cupons de simulação, suporte e cancelamento de pedidos pendentes. Não há cobranças ou ativação automática. Os critérios de ativação e os limites estão em [`docs/plataforma/fase-6-produto-comercial.md`](docs/plataforma/fase-6-produto-comercial.md).
+
+## Plataforma — Fase 7
+
+Ferramentas locais conferem a versão publicada de produção, protegem a escolha dos D1 físicos, ensaiam as migrações sobre exportação verificada e comparam os registros migrados sem expor convidados. A execução real do backup, o ensaio remoto e o corte do domínio seguem o roteiro e os portões de [`docs/plataforma/fase-7-migracao-controlada.md`](docs/plataforma/fase-7-migracao-controlada.md). A produção continua inalterada.

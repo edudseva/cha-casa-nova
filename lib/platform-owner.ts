@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import type { ChatGPTUser } from "@/app/chatgpt-auth";
-import { CURRENT_SITE_ID } from "@/lib/site-context";
+import { CURRENT_SITE_ID, SITE_ENVIRONMENT } from "@/lib/site-context";
 import type { PlatformInvitation, PlatformMember } from "@/lib/platform-workspace";
 
 export type OwnerPlan = {
@@ -104,10 +104,10 @@ async function seedOwnerCatalog(user: ChatGPTUser, siteName: string, coupleNames
       platform_role = 'owner', updated_at = CURRENT_TIMESTAMP`).bind(user.id, user.email.toLowerCase(), user.displayName),
     env.DB.prepare(`INSERT INTO event_sites
       (id, slug, name, couple_names, event_type, onboarding_status, status, environment, created_by, updated_at)
-      VALUES (?, ?, ?, ?, 'cha-de-panela', 'configured', 'active', 'homologation', ?, CURRENT_TIMESTAMP)
+      VALUES (?, ?, ?, ?, 'cha-de-panela', 'configured', 'active', ?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT(id) DO UPDATE SET name = excluded.name, couple_names = excluded.couple_names,
-      onboarding_status = 'configured', status = 'active', updated_at = CURRENT_TIMESTAMP`)
-      .bind(CURRENT_SITE_ID, CURRENT_SITE_ID, siteName, coupleNames, user.id),
+      onboarding_status = 'configured', status = 'active', environment = excluded.environment, updated_at = CURRENT_TIMESTAMP`)
+      .bind(CURRENT_SITE_ID, CURRENT_SITE_ID, siteName, coupleNames, SITE_ENVIRONMENT, user.id),
     env.DB.prepare(`INSERT INTO site_memberships (site_id, user_id, role, status)
       VALUES (?, ?, 'owner', 'active')
       ON CONFLICT(site_id, user_id) DO UPDATE SET role = 'owner', status = 'active'`).bind(CURRENT_SITE_ID, user.id),

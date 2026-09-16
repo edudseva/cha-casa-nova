@@ -34,6 +34,9 @@ done
 
 [[ -n "$database" ]] || { echo "Informe --database explicitamente." >&2; exit 64; }
 
+source "$(dirname "$0")/d1-target-guard.sh"
+verify_d1_target "$database" "${PRODUCTION_D1_ID:-}" "${HOMOLOGATION_D1_ID:-}"
+
 safe_database="$(printf '%s' "$database" | tr -cs '[:alnum:]._- ' '-' | tr ' ' '-')"
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 output="${output:-backups/${safe_database}-${timestamp}.sql}"

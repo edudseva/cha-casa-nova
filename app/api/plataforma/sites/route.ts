@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { requirePlatformOwnerApi } from "@/lib/platform-access";
 import { createAuditStatement } from "@/lib/audit-log";
+import { SITE_ENVIRONMENT } from "@/lib/site-context";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{1,46}[a-z0-9])$/;
@@ -38,6 +39,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (SITE_ENVIRONMENT !== "homologation") return Response.json({ error: "Cadastro de novos sites indisponível antes da abertura comercial." }, { status: 403 });
   if (!sameOrigin(request)) return Response.json({ error: "Origem inválida." }, { status: 403 });
   const auth = await requirePlatformOwnerApi();
   if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.status });

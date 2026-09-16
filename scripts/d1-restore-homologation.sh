@@ -56,6 +56,9 @@ done
   exit 77
 }
 
+source "$(dirname "$0")/d1-target-guard.sh"
+verify_d1_target "$database" "${HOMOLOGATION_D1_ID:-}" "${PRODUCTION_D1_ID:-}"
+
 if [[ -f "${file}.sha256" ]]; then
   echo "Verificando integridade do backup..."
   sha256sum --check "${file}.sha256"
