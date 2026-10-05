@@ -4,12 +4,30 @@ import { Toaster } from "@/components/ui/sonner";
 import { loadSiteConfig } from "@/lib/runtime-config";
 import "./globals.css";
 
+// Endereço público do site. Se o link mudar, atualize aqui.
+const SITE_URL = "https://cha-casa-nova-producao.eduardo-7f9.workers.dev";
+
 export async function generateMetadata(): Promise<Metadata> {
   const config = await loadSiteConfig();
   return {
     title: config.seoTitle,
     description: config.seoDescription,
     icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
+    openGraph: {
+      type: "website",
+      locale: "pt_BR",
+      url: SITE_URL,
+      siteName: config.seoTitle,
+      title: config.seoTitle,
+      description: config.seoDescription,
+      images: [{ url: `${SITE_URL}/og-image.jpg`, width: 1200, height: 630, alt: config.seoTitle }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: config.seoTitle,
+      description: config.seoDescription,
+      images: [`${SITE_URL}/og-image.jpg`],
+    },
   };
 }
 
