@@ -23,7 +23,7 @@ config.name = "cha-casa-nova-producao";
 config.topLevelName = "cha-casa-nova-producao";
 
 const migrationsDir = "../.openai/drizzle";
-const databaseName = "cha-casa-nova-db";
+const databaseName = "cha-casa-nova-producao";
 
 if (!config.d1_databases || config.d1_databases.length === 0) {
   config.d1_databases = [{ binding: "DB", database_name: databaseName, database_id: databaseId, migrations_dir: migrationsDir }];
