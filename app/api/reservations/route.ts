@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     const message = payload.message?.trim() ?? "";
 
     if (payload.website) return Response.json({ ok: true }, { status: 201 });
-    const catalog = await loadCatalog();
+    const catalog = await loadCatalog({ forceRefresh: true });
     if (!catalog.gifts.some((gift) => gift.id === giftId)) {
       return Response.json({ error: "Presente inválido." }, { status: 400 });
     }
