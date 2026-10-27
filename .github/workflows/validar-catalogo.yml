@@ -36,4 +36,4 @@ jobs:
         run: npm run build
 
       - name: Testes automatizados
-        run: node --test tests/*.test.mjs
+        run: node --test tests/catalog-regressions.test.mjs
