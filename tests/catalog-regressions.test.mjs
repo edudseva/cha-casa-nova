@@ -116,9 +116,9 @@ test('a saved D1 catalogue is returned without waiting for Google Sheets', async
   const cached = [{ id: 'cache-test', category: 'Outros', name: 'Presente em cache', price: null, url: null, note: null, priority: 'media', image: null }];
   const payload = JSON.stringify(cached);
   const module = await loadSource('../lib/catalog.ts', [
-    [/import \\{ env \\} from "cloudflare:workers";/, `const env = { DB: { prepare() { return { bind() { return { async first() { return { payload: ${JSON.stringify(payload)} }; }, async run() { return { success: true }; } }; } }; } } };`],
-    [/import localGifts from "@\\/data\\/gifts.json";/, `const localGifts = ${JSON.stringify(local)};`],
-    [/import siteConfig from "@\\/data\\/site-config.json";/, `const siteConfig = ${JSON.stringify(siteConfig)};`],
+    [/import \{ env \} from "cloudflare:workers";/, `const env = { DB: { prepare() { return { bind() { return { async first() { return { payload: ${JSON.stringify(payload)} }; }, async run() { return { success: true }; } }; } }; } } };`],
+    [/import localGifts from "@\/data\/gifts.json";/, `const localGifts = ${JSON.stringify(local)};`],
+    [/import siteConfig from "@\/data\/site-config.json";/, `const siteConfig = ${JSON.stringify(siteConfig)};`],
   ]);
   const original = globalThis.fetch;
   let sheetRequested = false;
