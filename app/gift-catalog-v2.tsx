@@ -158,22 +158,30 @@ export function GiftCatalogV2({ gifts, config }: Props) {
       } catch { /* Pix remains visibly unavailable until configured. */ }
     }
 
-    async function loadGifts() {
+    async function loadGifts(refresh = false) {
       try {
-        const response = await fetch("/api/gifts", { cache: "no-store", signal: AbortSignal.timeout(20_000) });
+        const endpoint = refresh ? "/api/gifts?refresh=1" : "/api/gifts";
+        const response = await fetch(endpoint, { cache: "no-store", signal: AbortSignal.timeout(20_000) });
         if (!response.ok) throw new Error("Catálogo indisponível");
         const liveCatalog = await response.json() as { gifts?: Gift[]; source?: string };
         if (!Array.isArray(liveCatalog.gifts)) throw new Error("Catálogo inválido");
         if (active) {
           setCatalogGifts(liveCatalog.gifts);
-          setCatalogWarning(liveCatalog.source === "database-cache" ? "Exibindo a última lista sincronizada. Tentaremos atualizar novamente em instantes." : "");
+          setCatalogWarning(liveCatalog.source === "database-cache" ? "Lista carregada. Conferindo se há atualizações..." : "");
         }
-      } catch { if (active) setCatalogWarning("Não conseguimos atualizar a lista. Tentaremos novamente em instantes."); }
-      finally { if (active) setCatalogLoading(false); }
+        // Show the saved catalog first, then refresh from Sheets without blocking render.
+        if (!refresh && liveCatalog.source === "database-cache") void loadGifts(true);
+      } catch {
+        if (active) setCatalogWarning("Não conseguimos atualizar a lista. Exibindo a última lista salva, se disponível.");
+      } finally {
+        if (active) setCatalogLoading(false);
+      }
     }
 
     void Promise.all([loadReservations(), loadPix(), loadGifts()]);
-    const refreshTimer = window.setInterval(() => { if (document.visibilityState === "visible") void loadGifts(); }, 60_000);
+    const refreshTimer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void loadGifts(true);
+    }, 60_000);
     return () => { active = false; window.clearInterval(refreshTimer); };
   }, []);
 
