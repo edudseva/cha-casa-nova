@@ -11,6 +11,7 @@ async function loadSource(path, replacements) {
   return import(`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(source)).toString('base64')}`);
 }
 const catalog = await loadSource('../lib/catalog.ts', [
+  [/import \{ loadSiteConfig \} from "@\/lib\/runtime-config";/, `const loadSiteConfig = async () => siteConfig;`],
   [/import \{ env \} from "cloudflare:workers";/, 'const env = { DB: { prepare() { throw new Error("database offline"); } } };'],
   [/import localGifts from "@\/data\/gifts.json";/, `const localGifts = ${JSON.stringify(local)};`],
   [/import siteConfig from "@\/data\/site-config.json";/, `const siteConfig = ${JSON.stringify(siteConfig)};`],
@@ -116,6 +117,7 @@ test('a saved D1 catalogue is returned without waiting for Google Sheets', async
   const cached = [{ id: 'cache-test', category: 'Outros', name: 'Presente em cache', price: null, url: null, note: null, priority: 'media', image: null }];
   const payload = JSON.stringify(cached);
   const module = await loadSource('../lib/catalog.ts', [
+    [/import \{ loadSiteConfig \} from "@\/lib\/runtime-config";/, `const loadSiteConfig = async () => siteConfig;`],
     [/import \{ env \} from "cloudflare:workers";/, `const env = { DB: { prepare() { return { bind() { return { async first() { return { payload: ${JSON.stringify(payload)} }; }, async run() { return { success: true }; } }; } }; } } };`],
     [/import localGifts from "@\/data\/gifts.json";/, `const localGifts = ${JSON.stringify(local)};`],
     [/import siteConfig from "@\/data\/site-config.json";/, `const siteConfig = ${JSON.stringify(siteConfig)};`],
