@@ -191,7 +191,14 @@ async function cachedCatalog() {
   } catch { return null; }
 }
 
-export async function loadCatalog(): Promise<{ gifts: Gift[]; source: "google-sheets" | "database-cache" }> {
+export async function loadCatalog(options: { forceRefresh?: boolean } = {}): Promise<{ gifts: Gift[]; source: "google-sheets" | "database-cache" }> {
+  // Public catalog reads are cache-first so visitors do not wait on Google Sheets.
+  // Reservation submissions explicitly request a fresh copy before validating a gift.
+  if (!options.forceRefresh) {
+    const cached = await cachedCatalog();
+    if (cached) return { gifts: cached, source: "database-cache" };
+  }
+
   try {
     const siteConfig = await loadSiteConfig();
     const response = await fetch(siteConfig.giftSheetCsvUrl, { cache: "no-store", signal: AbortSignal.timeout(15_000), headers: { accept: "text/csv" } });
