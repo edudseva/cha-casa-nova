@@ -11,6 +11,7 @@ async function loadSource(path, replacements) {
   return import(`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(source)).toString('base64')}`);
 }
 const catalog = await loadSource('../lib/catalog.ts', [
+  [/import \{ loadSiteConfig \} from "@\/lib\/runtime-config";/, `const loadSiteConfig = async () => siteConfig;`],
   [/import \{ env \} from "cloudflare:workers";/, 'const env = { DB: { prepare() { throw new Error("database offline"); } } };'],
   [/import localGifts from "@\/data\/gifts.json";/, `const localGifts = ${JSON.stringify(local)};`],
   [/import siteConfig from "@\/data\/site-config.json";/, `const siteConfig = ${JSON.stringify(siteConfig)};`],
@@ -110,4 +111,26 @@ test('mobile dialogs do not depend on translated viewport centering', () => {
   assert.doesNotMatch(dialog, /translate-[xy]-\[-50%\]/);
   assert.match(styles, /\.mobile-filter-dialog \{ inset: 0 !important;[^}]*margin: 0 !important;/);
   assert.match(styles, /\.reservation-dialog \{\s*inset: auto 8px max\(8px, env\(safe-area-inset-bottom\)\) !important;/);
+});
+
+test('a saved D1 catalogue is returned without waiting for Google Sheets', async () => {
+  const cached = [{ id: 'cache-test', category: 'Outros', name: 'Presente em cache', price: null, url: null, note: null, priority: 'media', image: null }];
+  const payload = JSON.stringify(cached);
+  const module = await loadSource('../lib/catalog.ts', [
+    [/import \{ loadSiteConfig \} from "@\/lib\/runtime-config";/, `const loadSiteConfig = async () => siteConfig;`],
+    [/import \{ env \} from "cloudflare:workers";/, `const env = { DB: { prepare() { return { bind() { return { async first() { return { payload: ${JSON.stringify(payload)} }; }, async run() { return { success: true }; } }; } }; } } };`],
+    [/import localGifts from "@\/data\/gifts.json";/, `const localGifts = ${JSON.stringify(local)};`],
+    [/import siteConfig from "@\/data\/site-config.json";/, `const siteConfig = ${JSON.stringify(siteConfig)};`],
+  ]);
+  const original = globalThis.fetch;
+  let sheetRequested = false;
+  globalThis.fetch = async () => { sheetRequested = true; throw new Error('Google Sheets should not be requested'); };
+  try {
+    const result = await module.loadCatalog();
+    assert.equal(result.source, 'database-cache');
+    assert.deepEqual(result.gifts, cached);
+    assert.equal(sheetRequested, false);
+  } finally {
+    globalThis.fetch = original;
+  }
 });
