@@ -1,0 +1,39 @@
+name: Validar otimização do catálogo
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - perf/catalogo-cache-primeiro
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validar-catalogo-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci --no-audit --no-fund
+
+      - name: Build de produção
+        run: npm run build
+
+      - name: Testes automatizados
+        run: node --test tests/*.test.mjs
