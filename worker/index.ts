@@ -5,6 +5,8 @@ import handler from "vinext/server/app-router-entry";
 interface Env {
   ASSETS: Fetcher;
   DB: D1Database;
+  CF_ACCESS_ISSUER?: string;
+  CF_ACCESS_AUDS?: string;
   IMAGES: {
     input(stream: ReadableStream): {
       transform(options: Record<string, unknown>): {
@@ -32,11 +34,6 @@ type AccessJwtClaims = {
 type AccessJwk = JsonWebKey & { kid?: string };
 type AccessJwksResponse = { keys?: AccessJwk[] };
 type VerifiedAccessIdentity = { email: string; id: string; name: string };
-
-type AccessEnvironment = {
-  CF_ACCESS_ISSUER?: string;
-  CF_ACCESS_AUDS?: string;
-};
 
 let accessJwksCache: {
   issuer: string;
@@ -102,10 +99,9 @@ async function getAccessSigningKey(issuer: string, kid: string): Promise<AccessJ
 
 async function verifyCloudflareAccess(request: Request, env: Env): Promise<VerifiedAccessIdentity | null> {
   const token = request.headers.get("cf-access-jwt-assertion");
-  const accessEnvironment = env as Env & AccessEnvironment;
-  const issuer = normalizeAccessIssuer(accessEnvironment.CF_ACCESS_ISSUER);
-  const allowedAudiences = (accessEnvironment.CF_ACCESS_AUDS ?? "")
-    .split(/[;,\\n]/)
+  const issuer = normalizeAccessIssuer(env.CF_ACCESS_ISSUER);
+  const allowedAudiences = (env.CF_ACCESS_AUDS ?? "")
+    .split(/[;,\n]/)
     .map((audience) => audience.trim())
     .filter(Boolean);
   if (!token || !issuer || allowedAudiences.length === 0) return null;
