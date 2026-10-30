@@ -36,7 +36,9 @@ test("admin usa senha armazenada como Secret e sessão assinada no Worker", () =
   assert.match(access, /admin-password-session/);
   assert.match(access, /admin@cha-casa-nova\.local/);
   assert.doesNotMatch(access, /getChatGPTUser|requireChatGPTUser/);
-  assert.doesNotMatch(worker, /cf-access-jwt-assertion|CF_ACCESS_ISSUER|CF_ACCESS_AUDS/);
+  // The legacy JWT header is stripped; no Cloudflare Access token is read or verified.
+  assert.doesNotMatch(worker, /request\.headers\.get\(["']cf-access-jwt-assertion["']\)/);
+  assert.doesNotMatch(worker, /CF_ACCESS_ISSUER|CF_ACCESS_AUDS/);
   assert.doesNotMatch(adminPages, /signin-with-chatgpt|href="\/conta"/);
 });
 
