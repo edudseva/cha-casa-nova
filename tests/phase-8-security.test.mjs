@@ -37,6 +37,6 @@ test("admin usa somente identidade verificada do Cloudflare Access, sem login Ch
 
 test("deploy injeta os identificadores da aplicação Cloudflare Access no Worker de produção", () => {
   const deployConfig = read("scripts/prepare-production-deploy.mjs");
-  assert.match(deployConfig, /CF_ACCESS_ISSUER: "https:\\/\\/late-dawn-b8a0\\.cloudflareaccess\\.com"/);
-  assert.match(deployConfig, /CF_ACCESS_AUDS: "8bc6c2ba27ed8c55f11c077083dbf8b8e743875190b636b01ca0669323466e1b"/);
+  assert.ok(deployConfig.includes('CF_ACCESS_ISSUER: "https://late-dawn-b8a0.cloudflareaccess.com"'));
+  assert.ok(deployConfig.includes('CF_ACCESS_AUDS: "8bc6c2ba27ed8c55f11c077083dbf8b8e743875190b636b01ca0669323466e1b"'));
 });
