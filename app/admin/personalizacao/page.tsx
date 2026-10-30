@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Home } from "lucide-react";
 import { requireAdminPageAccess } from "@/lib/admin-auth";
 import { loadSiteEditorState } from "@/lib/site-editor";
@@ -17,7 +16,7 @@ export default async function PersonalizationPage() {
         <p>
           Seu perfil não permite alterar as configurações deste evento.
         </p>
-        <Link href="/conta">Ver minha conta e acessos</Link>
+        <p>Entre pelo Cloudflare Access com uma conta autorizada.</p>
       </main>
     );
   }

@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
-import { getChatGPTUser, requireChatGPTUser, type ChatGPTUser } from "@/app/chatgpt-auth";
+import { headers } from "next/headers";
+import type { ChatGPTUser } from "@/app/chatgpt-auth";
 import { isPlatformOwner } from "@/lib/platform-access";
 import { CURRENT_SITE_ID } from "@/lib/site-context";
 
@@ -56,16 +57,33 @@ export async function getEventAccess(user: ChatGPTUser, siteId = CURRENT_SITE_ID
   return { siteId, role: membership.role as EventRole, source: "membership" };
 }
 
-export async function requireEventPage(permission: EventPermission, returnTo: string, siteId = CURRENT_SITE_ID) {
-  const user = await requireChatGPTUser(returnTo);
+export async function requireEventPage(permission: EventPermission, _returnTo: string, siteId = CURRENT_SITE_ID) {
+  const requestHeaders = await headers();
+  const email = requestHeaders.get("x-admin-access-email");
+  if (!email) return null;
+  const fullName = requestHeaders.get("x-admin-access-name");
+  const user: ChatGPTUser = {
+    id: requestHeaders.get("x-admin-access-id") ?? email.trim().toLowerCase(),
+    email,
+    displayName: fullName ?? email,
+    fullName,
+  };
   const access = await getEventAccess(user, siteId);
   if (!access || !roleHasPermission(access.role, permission)) return null;
   return { user, access };
 }
 
 export async function requireEventApi(permission: EventPermission, siteId = CURRENT_SITE_ID) {
-  const user = await getChatGPTUser();
-  if (!user) return { ok: false as const, status: 401, error: "Entre com sua conta para acessar." };
+  const requestHeaders = await headers();
+  const email = requestHeaders.get("x-admin-access-email");
+  if (!email) return { ok: false as const, status: 401, error: "Autenticação do Cloudflare Access não identificada." };
+  const fullName = requestHeaders.get("x-admin-access-name");
+  const user: ChatGPTUser = {
+    id: requestHeaders.get("x-admin-access-id") ?? email.trim().toLowerCase(),
+    email,
+    displayName: fullName ?? email,
+    fullName,
+  };
   const access = await getEventAccess(user, siteId);
   if (!access) return { ok: false as const, status: 403, error: "Sua conta não possui acesso a este evento." };
   if (!roleHasPermission(access.role, permission)) {
