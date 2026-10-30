@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
+
+const root = new URL("../", import.meta.url);
+const read = (path) => readFileSync(new URL(path, root), "utf8");
 import { csvCell } from "../lib/csv-export.ts";
 
 test("exportação CSV impede execução de fórmula e mantém células delimitadas", () => {
