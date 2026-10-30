@@ -22,6 +22,14 @@ const config = JSON.parse(readFileSync(wranglerPath, "utf8"));
 config.name = "cha-casa-nova-producao";
 config.topLevelName = "cha-casa-nova-producao";
 
+// Cloudflare Access identity verification for administrative routes.
+// These identifiers are configuration values, not authentication secrets.
+config.vars = {
+  ...(config.vars ?? {}),
+  CF_ACCESS_ISSUER: "https://late-dawn-b8a0.cloudflareaccess.com",
+  CF_ACCESS_AUDS: "8bc6c2ba27ed8c55f11c077083dbf8b8e743875190b636b01ca0669323466e1b",
+};
+
 const migrationsDir = "../.openai/drizzle";
 const databaseName = "cha-casa-nova-producao";
 
