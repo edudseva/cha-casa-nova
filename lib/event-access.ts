@@ -21,6 +21,9 @@ export type EventAccess = {
 
 type AdminEnvironment = { ADMIN_EMAIL?: string; ADMIN_EMAILS?: string };
 
+const PASSWORD_ADMIN_EMAIL = "admin@cha-casa-nova.local";
+const PASSWORD_ADMIN_ID = "admin-password-session";
+
 const permissions: Record<EventRole, ReadonlySet<EventPermission>> = {
   owner: new Set(["event.view", "event.settings.edit", "gifts.manage", "pix.manage", "reports.export", "members.manage"]),
   editor: new Set(["event.view", "event.settings.edit", "gifts.manage", "pix.manage", "reports.export"]),
@@ -44,15 +47,20 @@ export function roleHasPermission(role: EventRole, permission: EventPermission) 
 
 export async function getEventAccess(user: ChatGPTUser, siteId = CURRENT_SITE_ID): Promise<EventAccess | null> {
   const email = user.email.trim().toLowerCase();
+  // This identity can only be created by the Worker after validating the
+  // password-backed, HttpOnly session cookie and stripping browser headers.
+  if (user.id === PASSWORD_ADMIN_ID && email === PASSWORD_ADMIN_EMAIL) {
+    return { siteId, role: "owner", source: "configured-admin" };
+  }
   if (isPlatformOwner(email)) return { siteId, role: "owner", source: "platform-owner" };
   if (configuredAdminEmails().has(email)) return { siteId, role: "owner", source: "configured-admin" };
 
-  const membership = await env.DB.prepare(`SELECT m.role
-    FROM site_memberships m
-    INNER JOIN platform_users u ON u.id = m.user_id
-    WHERE m.site_id = ? AND m.status = 'active'
-      AND (u.id = ? OR lower(u.email) = ?)
-    LIMIT 1`).bind(siteId, user.id, email).first<{ role: string }>();
+  const membership = await env.DB.prepare(
+    "SELECT m.role FROM site_memberships m " +
+    "INNER JOIN platform_users u ON u.id = m.user_id " +
+    "WHERE m.site_id = ? AND m.status = 'active' " +
+    "AND (u.id = ? OR lower(u.email) = ?) LIMIT 1",
+  ).bind(siteId, user.id, email).first<{ role: string }>();
   if (!membership || !["owner", "editor", "viewer"].includes(membership.role)) return null;
   return { siteId, role: membership.role as EventRole, source: "membership" };
 }
@@ -76,7 +84,7 @@ export async function requireEventPage(permission: EventPermission, _returnTo: s
 export async function requireEventApi(permission: EventPermission, siteId = CURRENT_SITE_ID) {
   const requestHeaders = await headers();
   const email = requestHeaders.get("x-admin-access-email");
-  if (!email) return { ok: false as const, status: 401, error: "Autenticação do Cloudflare Access não identificada." };
+  if (!email) return { ok: false as const, status: 401, error: "Autenticação do painel não identificada." };
   const fullName = requestHeaders.get("x-admin-access-name");
   const user: ChatGPTUser = {
     id: requestHeaders.get("x-admin-access-id") ?? email.trim().toLowerCase(),
