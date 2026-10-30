@@ -18,7 +18,7 @@ test("admin usa somente identidade verificada do Cloudflare Access, sem login Ch
     read("app/admin/page.tsx"),
     read("app/admin/personalizacao/page.tsx"),
     read("app/admin/previa/page.tsx"),
-  ].join("\\n");
+  ].join("\n");
 
   assert.match(worker, /cf-access-jwt-assertion/);
   assert.match(worker, /crypto\.subtle\.verify/);
