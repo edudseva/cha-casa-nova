@@ -21,12 +21,12 @@ test("admin usa somente identidade verificada do Cloudflare Access, sem login Ch
   ].join("\\n");
 
   assert.match(worker, /cf-access-jwt-assertion/);
-  assert.match(worker, /crypto\\.subtle\\.verify/);
+  assert.match(worker, /crypto\.subtle\.verify/);
   assert.match(worker, /CF_ACCESS_ISSUER/);
   assert.match(worker, /CF_ACCESS_AUDS/);
-  assert.match(worker, /headers\\.delete\\("x-admin-access-email"\\)/);
+  assert.match(worker, /headers\.delete\("x-admin-access-email"\)/);
   assert.match(access, /x-admin-access-email/);
   assert.match(access, /Autenticação do Cloudflare Access não identificada/);
   assert.doesNotMatch(access, /getChatGPTUser|requireChatGPTUser/);
-  assert.doesNotMatch(adminPages, /signin-with-chatgpt|href="\\/conta"/);
+  assert.doesNotMatch(adminPages, /signin-with-chatgpt|href="\/conta"/);
 });
