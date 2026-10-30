@@ -15,7 +15,7 @@ test("exportação CSV impede execução de fórmula e mantém células delimita
   assert.equal(csvCell(12500), '"12500"');
 });
 
-test("admin usa somente identidade verificada do Cloudflare Access, sem login ChatGPT", () => {
+test("admin usa senha armazenada como Secret e sessão assinada no Worker", () => {
   const worker = read("worker/index.ts");
   const access = read("lib/event-access.ts");
   const adminPages = [
@@ -24,19 +24,28 @@ test("admin usa somente identidade verificada do Cloudflare Access, sem login Ch
     read("app/admin/previa/page.tsx"),
   ].join("\n");
 
-  assert.match(worker, /cf-access-jwt-assertion/);
-  assert.match(worker, /crypto\.subtle\.verify/);
-  assert.match(worker, /CF_ACCESS_ISSUER/);
-  assert.match(worker, /CF_ACCESS_AUDS/);
+  assert.match(worker, /ADMIN_PANEL_PASSWORD/);
+  assert.match(worker, /crypto\.subtle\.sign/);
+  assert.match(worker, /constantTimeEqual/);
+  assert.match(worker, /__Host-cha-casa-admin/);
+  assert.match(worker, /HttpOnly; SameSite=Strict/);
+  assert.match(worker, /forwardVerifiedAdminIdentity/);
   assert.match(worker, /headers\.delete\("x-admin-access-email"\)/);
-  assert.match(access, /x-admin-access-email/);
-  assert.match(access, /Autenticação do Cloudflare Access não identificada/);
+  assert.match(worker, /origin/);
+  assert.match(worker, /LOGIN_MAX_ATTEMPTS/);
+  assert.match(access, /admin-password-session/);
+  assert.match(access, /admin@cha-casa-nova\.local/);
   assert.doesNotMatch(access, /getChatGPTUser|requireChatGPTUser/);
+  assert.doesNotMatch(worker, /cf-access-jwt-assertion|CF_ACCESS_ISSUER|CF_ACCESS_AUDS/);
   assert.doesNotMatch(adminPages, /signin-with-chatgpt|href="\/conta"/);
 });
 
-test("deploy injeta os identificadores da aplicação Cloudflare Access no Worker de produção", () => {
+test("deploy mantém o Worker e o banco D1 de produção, sem expor senha no código", () => {
   const deployConfig = read("scripts/prepare-production-deploy.mjs");
-  assert.ok(deployConfig.includes('CF_ACCESS_ISSUER: "https://late-dawn-b8a0.cloudflareaccess.com"'));
-  assert.ok(deployConfig.includes('CF_ACCESS_AUDS: "8bc6c2ba27ed8c55f11c077083dbf8b8e743875190b636b01ca0669323466e1b"'));
+  assert.ok(deployConfig.includes('config.name = "cha-casa-nova-producao"'));
+  assert.ok(deployConfig.includes('config.topLevelName = "cha-casa-nova-producao"'));
+  assert.ok(deployConfig.includes('const databaseName = "cha-casa-nova-producao"'));
+  assert.ok(!deployConfig.includes("ADMIN_PANEL_PASSWORD"));
+  assert.ok(!deployConfig.includes("CF_ACCESS_ISSUER"));
+  assert.ok(!deployConfig.includes("CF_ACCESS_AUDS"));
 });
