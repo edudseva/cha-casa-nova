@@ -19,6 +19,7 @@ on:
       - "lib/event-access.ts"
       - "app/admin/**"
       - "app/gift-catalog-v2.tsx"
+      - "app/globals.css"
       - "scripts/prepare-production-deploy.mjs"
       - "tests/phase-8-security.test.mjs"
       - ".github/workflows/deploy-producao.yml"
