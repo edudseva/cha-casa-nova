@@ -18,6 +18,7 @@ on:
       - "worker/index.ts"
       - "lib/event-access.ts"
       - "app/admin/**"
+      - "app/gift-catalog-v2.tsx"
       - "scripts/prepare-production-deploy.mjs"
       - "tests/phase-8-security.test.mjs"
       - ".github/workflows/deploy-producao.yml"
