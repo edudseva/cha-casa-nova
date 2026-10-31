@@ -283,7 +283,7 @@ h1 { margin: 0; max-width: 660px; font-size: clamp(3.25rem, 7vw, 6.7rem); line-h
 .gift-note { min-height: 39px; margin: 9px 0 0; color: #7a827b; font-size: .78rem; line-height: 1.45; }
 .gift-card-footer { display: flex; align-items: end; justify-content: space-between; gap: 12px; margin-top: 22px; padding-top: 17px; border-top: 1px solid #ece5da; }
 .gift-card-footer > div { display: flex; flex-direction: column; }
-.price-label { color: #8a918b; font-size: .65rem; }
+.price-label { color: #8a918b; font-size: .65rem; font-weight: 700; }
 .gift-card-footer strong { margin-top: 3px; color: #355845; font-size: 1rem; }
 .gift-button { min-height: 44px; padding-inline: 15px; border-radius: 999px; font-size: .78rem; }
 .empty-state { display: grid; place-items: center; max-width: 1320px; margin: 0 auto; padding: 80px; color: #68736b; text-align: center; border: 1px dashed #d8cfc1; border-radius: 24px; }
