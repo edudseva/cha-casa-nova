@@ -466,7 +466,7 @@ export function GiftCatalogV2({ gifts, config }: Props) {
             return <article className={`gift-card ${isPurchased ? "reserved" : ""} ${unavailable ? "is-unavailable" : "is-clickable"}`} key={gift.id} onClick={openGift}>
               <GiftArtwork key={`${gift.id}:${gift.url ?? ""}:${gift.image ?? ""}`} gift={gift} Icon={Icon} />
               <div className="gift-card-body">{gift.priority === "alta" && <span className="priority"><Heart size={12} fill="currentColor" /> Queremos muito</span>}<p className="gift-category">{gift.category}</p><h3>{gift.name}</h3>{gift.note && <p className="gift-note">{gift.note}</p>}
-                <div className="gift-card-footer"><div><span className="price-label">Valor de referência</span><strong>{gift.price ? money.format(gift.price) : "A definir"}</strong></div>
+                <div className="gift-card-footer"><div><span className="price-label">VALOR ESTIMADO (EM MÉDIA)</span><strong>{gift.price ? money.format(gift.price) : "A definir"}</strong></div>
                   <Button disabled={unavailable} onClick={(event) => { event.stopPropagation(); openGift(); }} className="gift-button" aria-label={isPurchased ? `${gift.name} já foi presenteado` : `Ver ${gift.name}`}>
                     {isPurchased ? <><Check /> Presenteado</> : availabilityLoading ? "Verificando..." : <>Ver presente <ExternalLink /></>}
                   </Button>
