@@ -51,3 +51,16 @@ test("deploy mantém o Worker e o banco D1 de produção, sem expor senha no có
   assert.ok(!deployConfig.includes("CF_ACCESS_ISSUER"));
   assert.ok(!deployConfig.includes("CF_ACCESS_AUDS"));
 });
+
+
+test("CSP permite imagens HTTPS configuradas sem liberar scripts ou conexões externas", () => {
+  const worker = read("worker/index.ts");
+  assert.match(worker, /img-src 'self' data: https:/);
+  assert.match(worker, /script-src 'self' 'unsafe-inline'/);
+  assert.match(worker, /connect-src 'self'/);
+  assert.match(worker, /frame-ancestors 'none'/);
+  assert.match(worker, /base-uri 'self'/);
+  assert.match(worker, /form-action 'self'/);
+  assert.doesNotMatch(worker, /script-src[^;]*https:/);
+  assert.doesNotMatch(worker, /connect-src[^;]*https:/);
+});
