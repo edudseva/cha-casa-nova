@@ -821,7 +821,7 @@ section[id] { scroll-margin-top: 72px; }
 .admin-table-wrap th { color: #66594c; background: #f0e7dc; }
 .admin-table-wrap td { vertical-align: top; color: #4f453c; }
 .admin-table-wrap td strong, .admin-table-wrap td small { display: block; }
-.admin-table-wrap td small { max-width: 280px; margin-top: 3px; color: #8d8175; line-height: 1.35; }
+.admin-table-wrap td small { display: block; max-width: 280px; margin-top: 3px; color: #8d8175; line-height: 1.45; white-space: normal; overflow-wrap: anywhere; }
 .admin-reference { max-width: 170px; overflow-wrap: anywhere; font-size: .75rem; }
 .admin-actions { display: flex; justify-content: flex-end; gap: 7px; }
 .admin-empty { padding: 48px !important; color: #8d8175 !important; text-align: center; }
