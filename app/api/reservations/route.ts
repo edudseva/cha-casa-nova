@@ -85,7 +85,7 @@ export async function POST(request: Request) {
       "Convidado: " + guestName,
       "Entrega: " + deliveryLabel,
       message ? "Mensagem: " + message : "",
-    ].filter(Boolean).join("\\n"));
+    ].filter(Boolean).join("\n"));
 
     return Response.json({ ok: true }, { status: 201 });
   } catch (error) {
