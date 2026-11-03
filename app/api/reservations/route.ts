@@ -2,6 +2,7 @@ import { sameOrigin } from "@/lib/request-origin";
 import { env } from "cloudflare:workers";
 import { loadCatalog } from "@/lib/catalog";
 import { CURRENT_SITE_ID } from "@/lib/site-context";
+import { sendTelegramNotification } from "@/lib/telegram-notifications";
 
 type ReservationPayload = {
   giftId?: string;
@@ -48,7 +49,8 @@ export async function POST(request: Request) {
 
     if (payload.website) return Response.json({ ok: true }, { status: 201 });
     const catalog = await loadCatalog();
-    if (!catalog.gifts.some((gift) => gift.id === giftId)) {
+    const selectedGift = catalog.gifts.find((gift) => gift.id === giftId);
+    if (!selectedGift) {
       return Response.json({ error: "Presente inválido." }, { status: 400 });
     }
     if (!payload.purchaseConfirmed) {
@@ -73,6 +75,17 @@ export async function POST(request: Request) {
         "INSERT INTO reservations (site_id, gift_id, guest_name, guest_contact, delivery_choice, order_reference, message, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
       ).bind(CURRENT_SITE_ID, giftId, guestName, guestContact, deliveryChoice, orderReference, message, "purchased").run();
     }
+
+    const telegramEnv = env as typeof env & { TELEGRAM_BOT_TOKEN?: string; TELEGRAM_CHAT_ID?: string };
+    const deliveryLabel = deliveryChoice === "casal" ? "Endereço do casal" : deliveryChoice === "convidado" ? "Com o convidado" : "A combinar";
+    await sendTelegramNotification(telegramEnv, [
+      "🎁 NOVO PRESENTE REGISTRADO",
+      "",
+      "Presente: " + selectedGift.name,
+      "Convidado: " + guestName,
+      "Entrega: " + deliveryLabel,
+      message ? "Mensagem: " + message : "",
+    ].filter(Boolean).join("\\n"));
 
     return Response.json({ ok: true }, { status: 201 });
   } catch (error) {
