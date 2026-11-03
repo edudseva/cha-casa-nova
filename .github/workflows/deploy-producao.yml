@@ -17,6 +17,9 @@ on:
     paths:
       - "worker/index.ts"
       - "lib/event-access.ts"
+      - "lib/telegram-notifications.ts"
+      - "app/api/reservations/**"
+      - "app/api/contributions/**"
       - "app/admin/**"
       - "app/gift-catalog-v2.tsx"
       - "app/globals.css"
