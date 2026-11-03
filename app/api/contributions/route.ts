@@ -1,6 +1,7 @@
 import { sameOrigin } from "@/lib/request-origin";
 import { env } from "cloudflare:workers";
 import { CURRENT_SITE_ID } from "@/lib/site-context";
+import { sendTelegramNotification } from "@/lib/telegram-notifications";
 
 type ContributionPayload = {
   amount?: number;
@@ -37,6 +38,16 @@ export async function POST(request: Request) {
     await env.DB.prepare(
       "INSERT INTO contributions (site_id, guest_name, guest_contact, amount_cents, transaction_reference, message, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?)"
     ).bind(CURRENT_SITE_ID, guestName, guestContact, amountCents, transactionReference, message, "declared").run();
+
+    const telegramEnv = env as typeof env & { TELEGRAM_BOT_TOKEN?: string; TELEGRAM_CHAT_ID?: string };
+    await sendTelegramNotification(telegramEnv, [
+      "💚 NOVA CONTRIBUIÇÃO PIX INFORMADA",
+      "",
+      "Valor: R$ " + (amountCents / 100).toFixed(2).replace(".", ","),
+      "Convidado: " + guestName,
+      "Situação: aguardando conferência manual",
+      message ? "Mensagem: " + message : "",
+    ].filter(Boolean).join("\n"));
 
     return Response.json({ ok: true }, { status: 201 });
   } catch (error) {
