@@ -17,6 +17,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { Gift, SiteConfig } from "@/types/gift";
+import { RsvpForm } from "@/components/rsvp-form";
 
 const categoryIcons: Record<string, typeof GiftIcon> = {
   Cozinha: UtensilsCrossed,
@@ -358,7 +359,7 @@ export function GiftCatalogV2({ gifts, config }: Props) {
     <main>
       <header className="site-header">
         <a className="brand" href="#inicio" aria-label="Ir para o início"><span className="brand-mark"><Home size={18} /></span><span>{config.brandLabel}</span></a>
-        <nav aria-label="Navegação principal">{config.giftsEnabled && <a href="#presentes">Presentes</a>}{config.pixEnabled && <a href="#pix">Pix</a>}{config.projectPageEnabled && <a href="/projeto">O projeto</a>}{config.photosPageEnabled && <a href="/fotos">Fotos</a>}</nav>
+        <nav aria-label="Navegação principal">{config.giftsEnabled && <a href="#presentes">Presentes</a>}{config.pixEnabled && <a href="#pix">Pix</a>}<a href="#confirmacao">Confirmação</a>{config.projectPageEnabled && <a href="/projeto">O projeto</a>}{config.photosPageEnabled && <a href="/fotos">Fotos</a>}</nav>
       </header>
 
       <section className="hero" id="inicio">
@@ -383,6 +384,8 @@ export function GiftCatalogV2({ gifts, config }: Props) {
           {config.projectPageEnabled && <a className="hero-note" href="/projeto"><Heart size={17} fill="currentColor" /> Nosso projeto tomando forma <span aria-hidden="true">→</span></a>}
         </div>
       </section>
+
+      <RsvpForm />
 
       <section className="catalog-section" id="presentes" hidden={!config.giftsEnabled}>
         <div className="catalog-intro">
