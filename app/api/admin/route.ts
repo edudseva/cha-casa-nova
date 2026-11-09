@@ -10,9 +10,11 @@ export async function GET() {
   const auth = await requireAdminApi("event.view");
   if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.status });
 
-  const [reservations, contributions] = await env.DB.batch([
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS attendance_confirmations (id INTEGER PRIMARY KEY AUTOINCREMENT, site_id TEXT NOT NULL, group_id TEXT NOT NULL, guest_name TEXT NOT NULL, attending INTEGER NOT NULL CHECK (attending IN (0, 1)), created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
+  const [reservations, contributions, confirmations] = await env.DB.batch([
     env.DB.prepare("SELECT id, gift_id, guest_name, guest_contact, delivery_choice, order_reference, message, status, created_at FROM reservations WHERE site_id = ? ORDER BY created_at DESC").bind(CURRENT_SITE_ID),
     env.DB.prepare("SELECT id, guest_name, guest_contact, amount_cents, transaction_reference, message, payment_status, created_at FROM contributions WHERE site_id = ? ORDER BY created_at DESC").bind(CURRENT_SITE_ID),
+    env.DB.prepare("SELECT id, guest_name, attending, created_at FROM attendance_confirmations WHERE site_id = ? ORDER BY created_at ASC, id ASC").bind(CURRENT_SITE_ID),
   ]);
 
   const catalog = await loadCatalog();
@@ -21,6 +23,7 @@ export async function GET() {
   return Response.json({
     reservations: reservations.results.map((row) => ({ ...row, gift_name: names.get(String(row.gift_id)) ?? String(row.gift_id) })),
     contributions: contributions.results,
+    confirmations: confirmations.results.map((row) => ({ ...row, attending: Number(row.attending) === 1 })),
     catalog: {
       total: catalog.gifts.length,
       reserved: reserved.size,
