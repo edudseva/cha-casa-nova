@@ -173,8 +173,8 @@ export function AdminDashboard({ displayName, role, canManage, showPlatformLink 
             <p className="admin-mobile-hint">Cada pessoa, inclusive acompanhantes, aparece em uma linha.</p>
             <div className="admin-table-wrap"><Table><TableHeader><TableRow><TableHead>Nº</TableHead><TableHead>Nome</TableHead><TableHead>Presença</TableHead><TableHead>Data da confirmação</TableHead><TableHead className="text-right">Ação</TableHead></TableRow></TableHeader><TableBody>
               {loading && <TableRow><TableCell colSpan={5} className="admin-empty">Carregando confirmações...</TableCell></TableRow>}
-              {!loading && data.confirmations.map((item, index) => <TableRow key={item.id}><TableCell>{index + 1}</TableCell><TableCell><strong>{item.guest_name}</strong></TableCell><TableCell><Badge variant={item.attending ? "default" : "secondary"}>{item.attending ? "Vai" : "Não vai"}</Badge></TableCell><TableCell>{date.format(new Date(`${item.created_at}Z`))}</TableCell></TableRow>)}
-              {!loading && !data.confirmations.length && <TableRow><TableCell colSpan={4} className="admin-empty">Nenhuma confirmação recebida.</TableCell></TableRow>}
+              {!loading && data.confirmations.map((item, index) => <TableRow key={item.id}><TableCell>{index + 1}</TableCell><TableCell><strong>{item.guest_name}</strong></TableCell><TableCell><Badge variant={item.attending ? "default" : "secondary"}>{item.attending ? "Vai" : "Não vai"}</Badge></TableCell><TableCell>{date.format(new Date(`${item.created_at}Z`))}</TableCell><TableCell className="text-right">{canManage ? <Button size="sm" variant="outline" disabled={updating === `confirmation-${item.id}`} onClick={() => void deleteConfirmation(item.id, item.guest_name)}><Trash2 /> Excluir</Button> : <span className="admin-read-only">Somente leitura</span>}</TableCell></TableRow>)}
+              {!loading && !data.confirmations.length && <TableRow><TableCell colSpan={5} className="admin-empty">Nenhuma confirmação recebida.</TableCell></TableRow>}
             </TableBody></Table></div>
           </TabsContent>
           <TabsContent value="relatorios" className="admin-panel">
