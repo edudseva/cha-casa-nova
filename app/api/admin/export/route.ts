@@ -7,7 +7,14 @@ export async function GET(request: Request) {
   const auth = await requireAdminApi("reports.export");
   if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.status });
   const type = new URL(request.url).searchParams.get("type");
-  if (!type || !["presentes", "pix", "convidados"].includes(type)) return Response.json({ error: "Relatório inválido." }, { status: 400 });
+  if (!type || !["presentes", "pix", "convidados", "confirmacoes"].includes(type)) return Response.json({ error: "Relatório inválido." }, { status: 400 });
+  if (type === "confirmacoes") {
+    await env.DB.prepare("CREATE TABLE IF NOT EXISTS attendance_confirmations (id INTEGER PRIMARY KEY AUTOINCREMENT, site_id TEXT NOT NULL, group_id TEXT NOT NULL, guest_name TEXT NOT NULL, attending INTEGER NOT NULL CHECK (attending IN (0, 1)), created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
+    const result = await env.DB.prepare("SELECT guest_name, attending, created_at FROM attendance_confirmations WHERE site_id = ? ORDER BY created_at ASC, id ASC").bind(CURRENT_SITE_ID).all<{ guest_name: string; attending: number; created_at: string }>();
+    const headers = ["numero", "nome", "presenca", "data_confirmacao"];
+    const csv = [headers.map(csvCell).join(","), ...result.results.map((row, index) => [index + 1, row.guest_name, Number(row.attending) === 1 ? "Sim" : "Não", row.created_at].map(csvCell).join(","))].join("\r\n");
+    return new Response("\uFEFF" + csv, { headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": "attachment; filename=\"confirmacoes-cha-casa-nova.csv\"", "cache-control": "no-store" } });
+  }
   if (type === "convidados") {
     const [reservations, contributions] = await env.DB.batch([
       env.DB.prepare("SELECT guest_name, guest_contact, created_at FROM reservations WHERE site_id = ? ORDER BY created_at DESC").bind(CURRENT_SITE_ID),
