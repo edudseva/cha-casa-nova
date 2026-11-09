@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { BarChart3, Building2, Check, ChevronRight, CircleDollarSign, Download, Eye, Gift, Home, LayoutDashboard, Palette, RefreshCw, RotateCcw, UserRound, UsersRound } from "lucide-react";
+import { BarChart3, Building2, Check, ChevronRight, CircleDollarSign, Download, Eye, Gift, Home, LayoutDashboard, Palette, RefreshCw, RotateCcw, Trash2, UserRound, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -76,6 +76,25 @@ export function AdminDashboard({ displayName, role, canManage, showPlatformLink 
     data.contributions.forEach((item) => add(item.guest_name, item.guest_contact, "pix", item.amount_cents, item.created_at));
     return [...rows.values()].sort((a, b) => b.last.localeCompare(a.last));
   }, [data]);
+
+  async function deleteConfirmation(id: number, name: string) {
+    if (!window.confirm(`Excluir a confirmação de presença de "${name}"? Essa ação não pode ser desfeita.`)) return;
+    const key = `confirmation-${id}`;
+    setUpdating(key);
+    try {
+      const response = await fetch("/api/admin", {
+        method: "PATCH", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ kind: "confirmation", action: "delete", id }),
+        signal: AbortSignal.timeout(8_000),
+      });
+      const result = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(result.error ?? "Não foi possível excluir a confirmação.");
+      setData((current) => ({ ...current, confirmations: current.confirmations.filter((item) => item.id !== id) }));
+      toast.success("Confirmação excluída.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível excluir a confirmação.");
+    } finally { setUpdating(null); }
+  }
 
   async function update(kind: "reservation" | "contribution", id: number, status: string) {
     const key = `${kind}-${id}`;
@@ -152,8 +171,8 @@ export function AdminDashboard({ displayName, role, canManage, showPlatformLink 
           <TabsContent value="confirmacoes" className="admin-panel">
             <div className="admin-panel-heading"><div><h2>Confirmação de presença</h2><p>{data.confirmations.filter((item) => item.attending).length} vão participar · {data.confirmations.filter((item) => !item.attending).length} não vão participar · {data.confirmations.length} respostas</p></div><Button asChild variant="outline"><a href="/api/admin/export?type=confirmacoes"><Download /> Exportar CSV</a></Button></div>
             <p className="admin-mobile-hint">Cada pessoa, inclusive acompanhantes, aparece em uma linha.</p>
-            <div className="admin-table-wrap"><Table><TableHeader><TableRow><TableHead>Nº</TableHead><TableHead>Nome</TableHead><TableHead>Presença</TableHead><TableHead>Data da confirmação</TableHead></TableRow></TableHeader><TableBody>
-              {loading && <TableRow><TableCell colSpan={4} className="admin-empty">Carregando confirmações...</TableCell></TableRow>}
+            <div className="admin-table-wrap"><Table><TableHeader><TableRow><TableHead>Nº</TableHead><TableHead>Nome</TableHead><TableHead>Presença</TableHead><TableHead>Data da confirmação</TableHead><TableHead className="text-right">Ação</TableHead></TableRow></TableHeader><TableBody>
+              {loading && <TableRow><TableCell colSpan={5} className="admin-empty">Carregando confirmações...</TableCell></TableRow>}
               {!loading && data.confirmations.map((item, index) => <TableRow key={item.id}><TableCell>{index + 1}</TableCell><TableCell><strong>{item.guest_name}</strong></TableCell><TableCell><Badge variant={item.attending ? "default" : "secondary"}>{item.attending ? "Vai" : "Não vai"}</Badge></TableCell><TableCell>{date.format(new Date(`${item.created_at}Z`))}</TableCell></TableRow>)}
               {!loading && !data.confirmations.length && <TableRow><TableCell colSpan={4} className="admin-empty">Nenhuma confirmação recebida.</TableCell></TableRow>}
             </TableBody></Table></div>
