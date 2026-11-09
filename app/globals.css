@@ -1765,3 +1765,33 @@ section[id] { scroll-margin-top: 72px; }
 .rsvp-success h3 { font: 500 1.7rem Georgia, serif; }
 .rsvp-success p { color: #536257; }
 @media (max-width: 760px) { .rsvp-section { grid-template-columns: 1fr; margin: 2.5rem 1rem; } }
+
+
+/* Destaque do acesso publico a confirmacao de presenca */
+.site-header nav a.nav-rsvp-link {
+  min-height: 40px;
+  padding: 8px 15px;
+  border: 1.5px solid #3c7653;
+  border-radius: 999px;
+  color: #28583c;
+  background: #f8fbf5;
+  font-weight: 800;
+  white-space: nowrap;
+  transition: background .2s ease, border-color .2s ease, transform .2s ease;
+}
+.site-header nav a.nav-rsvp-link:hover {
+  border-color: #2f6847;
+  background: #e6f0e4;
+  transform: translateY(-1px);
+}
+.site-header nav a.nav-rsvp-link:focus-visible {
+  outline: 3px solid rgba(60, 118, 83, .28);
+  outline-offset: 3px;
+}
+.rsvp-page { min-height: calc(100vh - 72px); padding: 1px 0 2rem; background: #f7f3ea; }
+.rsvp-page > .rsvp-section { margin-top: clamp(3rem, 8vw, 6rem); margin-bottom: clamp(3rem, 8vw, 6rem); }
+@media (max-width: 760px) {
+  .site-header { gap: 12px; padding-inline: 4vw; }
+  .site-header nav { gap: 10px 16px; flex-wrap: wrap; justify-content: flex-end; }
+  .site-header nav a.nav-rsvp-link { min-height: 38px; padding: 7px 11px; font-size: .82rem; }
+}
