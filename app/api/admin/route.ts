@@ -43,6 +43,16 @@ export async function PATCH(request: Request) {
   const id = Number(body.id);
   if (!Number.isInteger(id) || id < 1) return Response.json({ error: "Registro inválido." }, { status: 400 });
 
+  if (body.kind === "confirmation" && body.action === "delete") {
+    if (!roleHasPermission(auth.access.role, "gifts.manage")) return Response.json({ error: "Seu perfil não permite excluir confirmações." }, { status: 403 });
+    const current = await env.DB.prepare("SELECT guest_name, attending FROM attendance_confirmations WHERE id = ? AND site_id = ?").bind(id, CURRENT_SITE_ID).first<{ guest_name: string; attending: number }>();
+    if (!current) return Response.json({ error: "Confirmação não encontrada." }, { status: 404 });
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM attendance_confirmations WHERE id = ? AND site_id = ?").bind(id, CURRENT_SITE_ID),
+      createAuditStatement({ siteId: CURRENT_SITE_ID, actor: auth.user, action: "attendance_confirmation.deleted", entityType: "attendance_confirmation", entityId: id, metadata: { guest_name: current.guest_name, attending: Number(current.attending) === 1 } }),
+    ]);
+    return Response.json({ ok: true });
+  }
   if (body.kind === "reservation" && ["purchased", "cancelled"].includes(body.status ?? "")) {
     if (!roleHasPermission(auth.access.role, "gifts.manage")) return Response.json({ error: "Seu perfil não permite alterar presentes." }, { status: 403 });
     const current = await env.DB.prepare("SELECT status FROM reservations WHERE id = ? AND site_id = ?").bind(id, CURRENT_SITE_ID).first<{ status: string }>();
