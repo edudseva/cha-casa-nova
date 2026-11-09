@@ -17,7 +17,8 @@ type Contribution = {
   id: number; guest_name: string; guest_contact: string; amount_cents: number;
   transaction_reference: string; message: string; payment_status: "declared" | "confirmed" | "rejected"; created_at: string;
 };
-type AdminData = { reservations: Reservation[]; contributions: Contribution[]; catalog: { total: number; reserved: number; available: number; source: string } };
+type AttendanceConfirmation = { id: number; guest_name: string; attending: boolean; created_at: string };
+type AdminData = { reservations: Reservation[]; contributions: Contribution[]; confirmations: AttendanceConfirmation[]; catalog: { total: number; reserved: number; available: number; source: string } };
 
 const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const date = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" });
@@ -29,7 +30,7 @@ function deliveryLabel(value: string) {
 const roleLabels: Record<string, string> = { owner: "Responsável principal", editor: "Administrador", viewer: "Somente leitura" };
 
 export function AdminDashboard({ displayName, role, canManage, showPlatformLink }: { displayName: string; role: string; canManage: boolean; showPlatformLink: boolean }) {
-  const [data, setData] = useState<AdminData>({ reservations: [], contributions: [], catalog: { total: 0, reserved: 0, available: 0, source: "" } });
+  const [data, setData] = useState<AdminData>({ reservations: [], contributions: [], confirmations: [], catalog: { total: 0, reserved: 0, available: 0, source: "" } });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [pixFilter, setPixFilter] = useState<"declared" | "all">("declared");
@@ -119,7 +120,7 @@ export function AdminDashboard({ displayName, role, canManage, showPlatformLink 
 
         <div className="admin-section-label"><strong>Acompanhar interações</strong><span>Confira registros e trate pendências antes de exportar</span></div>
         <Tabs defaultValue="presentes" className="admin-tabs">
-          <TabsList><TabsTrigger value="presentes"><Gift /> Presentes</TabsTrigger><TabsTrigger value="pix"><CircleDollarSign /> Pix {summary.declaredPix > 0 && <span className="admin-tab-count">{summary.declaredPix}</span>}</TabsTrigger><TabsTrigger value="convidados"><UsersRound /> Convidados</TabsTrigger><TabsTrigger value="relatorios"><BarChart3 /> Relatórios</TabsTrigger></TabsList>
+          <TabsList><TabsTrigger value="presentes"><Gift /> Presentes</TabsTrigger><TabsTrigger value="pix"><CircleDollarSign /> Pix {summary.declaredPix > 0 && <span className="admin-tab-count">{summary.declaredPix}</span>}</TabsTrigger><TabsTrigger value="convidados"><UsersRound /> Convidados</TabsTrigger><TabsTrigger value="confirmacoes"><Check /> Confirmação</TabsTrigger><TabsTrigger value="relatorios"><BarChart3 /> Relatórios</TabsTrigger></TabsList>
           <TabsContent value="presentes" className="admin-panel">
             <div className="admin-panel-heading"><div><h2>Presentes</h2><p>Desfaça uma confirmação somente quando ela tiver sido registrada por engano.</p></div><Button asChild variant="outline"><a href="/api/admin/export?type=presentes"><Download /> Exportar CSV</a></Button></div>
             <p className="admin-mobile-hint">Deslize a tabela para o lado para consultar todos os dados.</p>
@@ -146,6 +147,15 @@ export function AdminDashboard({ displayName, role, canManage, showPlatformLink 
               {loading && <TableRow><TableCell colSpan={6} className="admin-empty">Carregando convidados...</TableCell></TableRow>}
               {guests.map((guest) => <TableRow key={guest.key}><TableCell><strong>{guest.name || "Convidado"}</strong></TableCell><TableCell>{guest.contact || "Não informado"}</TableCell><TableCell>{guest.gifts}</TableCell><TableCell>{money.format(guest.pix / 100)}</TableCell><TableCell>{guest.interactions}</TableCell><TableCell>{date.format(new Date(`${guest.last}Z`))}</TableCell></TableRow>)}
               {!loading && !guests.length && <TableRow><TableCell colSpan={6} className="admin-empty">Nenhum convidado interagiu com o site ainda.</TableCell></TableRow>}
+            </TableBody></Table></div>
+          </TabsContent>
+          <TabsContent value="confirmacoes" className="admin-panel">
+            <div className="admin-panel-heading"><div><h2>Confirmação de presença</h2><p>{data.confirmations.filter((item) => item.attending).length} vão participar · {data.confirmations.filter((item) => !item.attending).length} não vão participar · {data.confirmations.length} respostas</p></div><Button asChild variant="outline"><a href="/api/admin/export?type=confirmacoes"><Download /> Exportar CSV</a></Button></div>
+            <p className="admin-mobile-hint">Cada pessoa, inclusive acompanhantes, aparece em uma linha.</p>
+            <div className="admin-table-wrap"><Table><TableHeader><TableRow><TableHead>Nº</TableHead><TableHead>Nome</TableHead><TableHead>Presença</TableHead><TableHead>Data da confirmação</TableHead></TableRow></TableHeader><TableBody>
+              {loading && <TableRow><TableCell colSpan={4} className="admin-empty">Carregando confirmações...</TableCell></TableRow>}
+              {!loading && data.confirmations.map((item, index) => <TableRow key={item.id}><TableCell>{index + 1}</TableCell><TableCell><strong>{item.guest_name}</strong></TableCell><TableCell><Badge variant={item.attending ? "default" : "secondary"}>{item.attending ? "Vai" : "Não vai"}</Badge></TableCell><TableCell>{date.format(new Date(`${item.created_at}Z`))}</TableCell></TableRow>)}
+              {!loading && !data.confirmations.length && <TableRow><TableCell colSpan={4} className="admin-empty">Nenhuma confirmação recebida.</TableCell></TableRow>}
             </TableBody></Table></div>
           </TabsContent>
           <TabsContent value="relatorios" className="admin-panel">
