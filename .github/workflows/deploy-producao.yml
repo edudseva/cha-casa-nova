@@ -20,6 +20,8 @@ on:
       - "lib/telegram-notifications.ts"
       - "app/api/reservations/**"
       - "app/api/contributions/**"
+      - "app/api/confirmations/**"
+      - "components/rsvp-form.tsx"
       - "app/admin/**"
       - "app/gift-catalog-v2.tsx"
       - "app/globals.css"
