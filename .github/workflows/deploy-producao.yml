@@ -18,6 +18,8 @@ on:
       - "worker/index.ts"
       - "lib/event-access.ts"
       - "lib/telegram-notifications.ts"
+      - "lib/catalog.ts"
+      - "app/api/product-image/**"
       - "app/api/reservations/**"
       - "app/api/contributions/**"
       - "app/api/confirmations/**"
