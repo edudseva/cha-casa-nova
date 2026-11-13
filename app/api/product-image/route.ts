@@ -3,7 +3,7 @@ import { env } from "cloudflare:workers";
 
 const allowedRetailers = [
   "amazon.com.br", "a.co", "amzn.la", "fastshop.com.br", "mercadolivre.com.br",
-  "magazineluiza.com.br", "madeiramadeira.com.br", "shp.ee", "shopee.com.br", "meli.la", "dfcolchoes.com.br", "electrolux.com.br",
+  "magazineluiza.com.br", "madeiramadeira.com.br", "shp.ee", "shopee.com.br", "meli.la", "dfcolchoes.com.br", "electrolux.com.br", "suggar.com.br",
 ];
 
 const MAX_PAGE_BYTES = 3_000_000;
