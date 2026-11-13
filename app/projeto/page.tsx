@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ArrowLeft, ArrowRight, Heart, Home, Lock } from "lucide-react";
+import { ArrowLeft, ArrowRight, Heart, Lock } from "lucide-react";
 import Link from "next/link";
 import { loadProjectGallery } from "@/lib/project-gallery";
 import { loadSiteConfig } from "@/lib/runtime-config";
@@ -19,7 +19,7 @@ export default async function ProjectPage() {
   return (
     <main className="project-page">
       <header className="site-header project-header">
-        <Link className="brand" href="/#inicio" aria-label="Voltar ao início"><span className="brand-mark"><Home size={18} /></span><span>{config.brandLabel}</span></Link>
+        <Link className="brand" href="/#inicio" aria-label="Voltar ao início"><span>{config.brandLabel}</span></Link>
         <nav aria-label="Navegação principal"><Link className="nav-rsvp-link" href="/confirmacao">Confirme sua presença</Link>{config.giftsEnabled && <Link href="/#presentes">Presentes</Link>}{config.pixEnabled && <Link href="/#pix">Pix</Link>}<Link className="current" href="/projeto">O projeto</Link>{config.photosPageEnabled && <Link href="/fotos">Fotos</Link>}</nav>
       </header>
 

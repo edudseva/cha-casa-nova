@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ArrowLeft, Heart, Home, Lock, Maximize2 } from "lucide-react";
+import { ArrowLeft, Heart, Lock, Maximize2 } from "lucide-react";
 import Link from "next/link";
 import { loadSiteConfig } from "@/lib/runtime-config";
 import type { PhotoGalleryItem } from "@/types/gift";
@@ -28,7 +28,7 @@ export default async function PhotosPage() {
   return (
     <main className="photos-page">
       <header className="site-header photos-header">
-        <Link className="brand" href="/#inicio" aria-label="Voltar ao início"><span className="brand-mark"><Home size={18} /></span><span>{config.brandLabel}</span></Link>
+        <Link className="brand" href="/#inicio" aria-label="Voltar ao início"><span>{config.brandLabel}</span></Link>
         <nav aria-label="Navegação principal"><Link className="nav-rsvp-link" href="/confirmacao">Confirme sua presença</Link>{config.giftsEnabled && <Link href="/#presentes">Presentes</Link>}{config.pixEnabled && <Link href="/#pix">Pix</Link>}{config.projectPageEnabled && <Link href="/projeto">O projeto</Link>}<Link className="current" href="/fotos">Fotos</Link></nav>
       </header>
 

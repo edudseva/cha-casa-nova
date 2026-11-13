@@ -2,7 +2,7 @@
 
 import { FormEvent, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, ArrowLeft, CalendarDays, CheckCircle2, Cloud, Eye, Gift, History, Home, Images, Info, Landmark, Link2, LoaderCircle, Redo2, Save, Send, ShieldCheck, Sparkles, Undo2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CalendarDays, CheckCircle2, Cloud, Eye, Gift, History, Images, Info, Landmark, Link2, LoaderCircle, Redo2, Save, Send, ShieldCheck, Sparkles, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -243,7 +243,7 @@ export function PersonalizationForm({
 
   return <main className="admin-page">
     <header className="admin-header">
-      <Link className="brand" href="/"><span className="brand-mark"><Home size={18} /></span><span><small>Painel do evento</small>{config.brandLabel}</span></Link>
+      <Link className="brand" href="/"><span><small>Painel do evento</small>{config.brandLabel}</span></Link>
       <Button asChild variant="outline"><Link href="/admin" aria-label="Voltar ao painel"><ArrowLeft /> <span className="admin-back-label">Voltar ao painel</span></Link></Button>
     </header>
     <section className="admin-shell admin-config-shell">

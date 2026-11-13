@@ -357,7 +357,7 @@ export function GiftCatalogV2({ gifts, config }: Props) {
   return (
     <main>
       <header className="site-header">
-        <a className="brand" href="#inicio" aria-label="Ir para o início"><span className="brand-mark"><Home size={18} /></span><span>{config.brandLabel}</span></a>
+        <a className="brand" href="#inicio" aria-label="Ir para o início"><span>{config.brandLabel}</span></a>
         <nav aria-label="Navegação principal"><a className="nav-rsvp-link" href="/confirmacao">Confirme sua presença</a>{config.giftsEnabled && <a href="#presentes">Presentes</a>}{config.pixEnabled && <a href="#pix">Pix</a>}{config.projectPageEnabled && <a href="/projeto">O projeto</a>}{config.photosPageEnabled && <a href="/fotos">Fotos</a>}</nav>
       </header>
 

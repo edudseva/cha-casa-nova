@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { BarChart3, Building2, Check, ChevronRight, CircleDollarSign, Download, Eye, Gift, Home, LayoutDashboard, Palette, RefreshCw, RotateCcw, Trash2, UserRound, UsersRound } from "lucide-react";
+import { BarChart3, Building2, Check, ChevronRight, CircleDollarSign, Download, Eye, Gift, LayoutDashboard, Palette, RefreshCw, RotateCcw, Trash2, UserRound, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -115,7 +115,7 @@ export function AdminDashboard({ displayName, role, canManage, showPlatformLink 
   return (
     <main className="admin-page">
       <header className="admin-header">
-        <Link className="brand" href="/"><span className="brand-mark"><Home size={18} /></span><span><small>Painel do evento</small>Nosso cantinho</span></Link>
+        <Link className="brand" href="/"><span><small>Painel do evento</small>Nosso cantinho</span></Link>
         <div><span className="admin-user"><strong>{displayName}</strong><small>{roleLabels[role] ?? role}</small></span><Button asChild variant="outline"><Link href="/conta"><UserRound /> Conta</Link></Button><Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw /> Atualizar</Button></div>
       </header>
       <section className="admin-shell">

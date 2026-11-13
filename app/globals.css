@@ -1796,9 +1796,9 @@ section[id] { scroll-margin-top: 72px; }
   .site-header nav a.nav-rsvp-link { min-height: 38px; padding: 7px 11px; font-size: .82rem; }
 }
 
-/* Header mobile: quatro abas em linha e confirmacao em faixa propria */
+/* Header mobile: quatro abas em linha e confirmacao em faixa propria em todas as paginas */
 @media (max-width: 680px) {
-  .site-header:not(.photos-header):not(.project-header) {
+  .site-header {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 6px;
@@ -1806,11 +1806,11 @@ section[id] { scroll-margin-top: 72px; }
     padding: 9px 12px 10px;
   }
 
-  .site-header:not(.photos-header):not(.project-header) .brand {
+  .site-header .brand {
     justify-self: start;
   }
 
-  .site-header:not(.photos-header):not(.project-header) nav {
+  .site-header nav {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     align-items: center;
@@ -1821,7 +1821,7 @@ section[id] { scroll-margin-top: 72px; }
     white-space: nowrap;
   }
 
-  .site-header:not(.photos-header):not(.project-header) nav a:not(.nav-rsvp-link) {
+  .site-header nav a:not(.nav-rsvp-link) {
     grid-row: 1;
     justify-content: center;
     min-width: 0;
@@ -1830,7 +1830,7 @@ section[id] { scroll-margin-top: 72px; }
     text-align: center;
   }
 
-  .site-header:not(.photos-header):not(.project-header) nav a.nav-rsvp-link {
+  .site-header nav a.nav-rsvp-link {
     grid-column: 1 / -1;
     grid-row: 2;
     justify-content: center;
@@ -1843,7 +1843,7 @@ section[id] { scroll-margin-top: 72px; }
 }
 
 @media (max-width: 380px) {
-  .site-header:not(.photos-header):not(.project-header) nav {
+  .site-header nav {
     gap: 2px;
     font-size: .65rem;
   }
