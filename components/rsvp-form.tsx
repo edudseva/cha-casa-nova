@@ -61,7 +61,7 @@ export function RsvpForm() {
         <p>Conte se você vem e inclua quem vai acompanhar você.</p>
         <div className="rsvp-event-details" aria-label="Informações do evento">
           <p><CalendarDays size={18} /><span><strong>28/11</strong></span></p>
-          <p><Clock3 size={18} /><span><strong>14h</strong></span></p>
+          <p><Clock3 size={18} /><span><strong>14h30</strong></span></p>
           <p><MapPin size={18} /><span><strong>SHIS QL 20 Conj. 02, Casa 14</strong><small>Lago Sul</small></span></p>
         </div>
       </div>
