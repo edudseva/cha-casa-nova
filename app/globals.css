@@ -1752,6 +1752,12 @@ section[id] { scroll-margin-top: 72px; }
 .rsvp-section { max-width: 1120px; margin: 4rem auto; padding: clamp(1.5rem, 4vw, 3rem); display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 2rem; align-items: start; background: #f3eee4; border-radius: 24px; color: #25372d; }
 .rsvp-copy h2 { font: 500 clamp(2rem, 4vw, 3rem) Georgia, serif; margin: .4rem 0 .8rem; }
 .rsvp-copy > p:last-child { color: #536257; line-height: 1.6; }
+.rsvp-event-details { display: grid; gap: .75rem; margin-top: 1.5rem; padding: 1rem 1.1rem; border: 1px solid #d9dfd2; border-radius: 14px; background: #fbfaf6; }
+.rsvp-event-details p { display: flex; align-items: flex-start; gap: .7rem; margin: 0; color: #35533e; line-height: 1.4; }
+.rsvp-event-details svg { flex: 0 0 auto; margin-top: .1rem; color: #477653; }
+.rsvp-event-details span { display: grid; gap: .1rem; }
+.rsvp-event-details strong { font-weight: 750; }
+.rsvp-event-details small { color: #68766b; font-size: .88rem; }
 .rsvp-card { background: #fff; border: 1px solid #e3dfd5; border-radius: 18px; padding: clamp(1rem, 3vw, 1.5rem); }
 .rsvp-form { display: grid; gap: 1rem; }
 .rsvp-person { border: 1px solid #e5e7df; border-radius: 12px; padding: 1rem; display: grid; gap: .75rem; min-width: 0; }
