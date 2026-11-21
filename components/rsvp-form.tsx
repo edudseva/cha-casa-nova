@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Plus, Trash2, Users } from "lucide-react";
+import { CalendarDays, Clock3, MapPin, Plus, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,6 +59,11 @@ export function RsvpForm() {
         <p className="eyebrow">Vai estar com a gente?</p>
         <h2>Confirme sua presença</h2>
         <p>Conte se você vem e inclua quem vai acompanhar você.</p>
+        <div className="rsvp-event-details" aria-label="Informações do evento">
+          <p><CalendarDays size={18} /><span><strong>28/11</strong></span></p>
+          <p><Clock3 size={18} /><span><strong>14h</strong></span></p>
+          <p><MapPin size={18} /><span><strong>SHIS QL 20 Conj. 02, Casa 14</strong><small>Lago Sul</small></span></p>
+        </div>
       </div>
       <div className="rsvp-card">
         {sent ? (
