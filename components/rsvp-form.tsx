@@ -63,6 +63,7 @@ export function RsvpForm() {
           <p><CalendarDays size={18} /><span><strong>28/11</strong></span></p>
           <p><Clock3 size={18} /><span><strong>14h30</strong></span></p>
           <p><MapPin size={18} /><span><strong>SHIS QL 20 Conj. 02, Casa 14</strong><small>Lago Sul</small></span></p>
+          <a className="rsvp-maps-link" href="https://maps.app.goo.gl/rea5dMrxVWThvzGj8?g_st=ic" target="_blank" rel="noopener noreferrer"><MapPin size={17} /> Ver localização no Google Maps</a>
         </div>
       </div>
       <div className="rsvp-card">
