@@ -62,7 +62,7 @@ export function RsvpForm() {
         <div className="rsvp-event-details" aria-label="Informações do evento">
           <p><CalendarDays size={18} /><span><strong>28/11</strong></span></p>
           <p><Clock3 size={18} /><span><strong>14h30</strong></span></p>
-          <p><MapPin size={18} /><span><strong>SHIS QL 20 Conj. 02, Casa 14</strong><small>Lago Sul</small></span></p>
+          <p className="rsvp-address"><MapPin size={18} /><span><strong>SHIS QL 20 Conj. 02, Casa 14</strong><strong className="rsvp-neighborhood">Lago Sul</strong></span></p>
           <a className="rsvp-maps-link" href="https://maps.app.goo.gl/rea5dMrxVWThvzGj8?g_st=ic" target="_blank" rel="noopener noreferrer"><MapPin size={17} /> Ver localização no Google Maps</a>
         </div>
       </div>
